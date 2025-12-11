@@ -7,10 +7,6 @@ app = Flask(__name__)
 app.config['SESSION_TYPE'] = 'filesystem'
 app.secret_key = "akjdsbkjas&^absdjkajbdkasbdksajbdksadbkbj"
 
-def get_db_conn():
-    conn = sqlite3.connect('task_manager.db')
-    conn.row_factory = sqlite3.Row
-    return conn
 
 def roles_permitted(roles):
     def decorator(f):
@@ -115,26 +111,41 @@ def register():
         return render_template('register_form.html', username=username)
 
 
-import sqlite3
-
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=[ 'GET', 'POST' ])
 def login():
     username = ''
-
+    db = get_db_conn()
+    cursor = db.cursor()
     if request.method == 'POST':
-        username = request.form.get('username', '')
-        password = request.form.get('password', '')
-        flash("Example flash message: login attempted")
-
-    return render_template('login_form.html', username=username)
-
+        form = request.form
+        username = form['username']
+        password = form['password']
+        user = cursor.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
+        if user:
+            hashed_password = hash_password(username, password)
+            if user['password'] == hashed_password:
+                session['uid'] = user['id']
+                session['username'] = user['username']
+                session['role'] = user['role']
+                if user['role'] == 'member':
+                    return redirect('/member')
+                elif user['role'] == 'admin':
+                    return redirect('/admin')
+            else:
+                flash('ERROR: wrong creedentials')
+                return render_template('login_form.html', username=username)
+        else:
+            flash('ERROR: username not found')
+            return render_template('login_form.html', username=username)
+    else: 
+        return render_template('login_form.html', username=username)
 
 
 
 @app.route('/member')
 @roles_permitted(['member'])
 def member():
-    return render_template('member_dashboard.html')
+    return render_template('base_member.html')
 
 
 
