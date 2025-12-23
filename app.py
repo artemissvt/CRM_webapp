@@ -106,7 +106,7 @@ def register():
                 cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", 
                                (username, hashed_password))
                 db.commit()
-                return redirect('/')
+                return redirect('/login')
     else:
         return render_template('register_form.html', username=username)
 
@@ -127,12 +127,12 @@ def login():
                 session['uid'] = user['id']
                 session['username'] = user['username']
                 session['role'] = user['role']
-                if user['role'] == 'member':
-                    return redirect('/member')
+                if user['role'] == 'employee':
+                    return redirect('/employee')
                 elif user['role'] == 'admin':
                     return redirect('/admin')
             else:
-                flash('ERROR: wrong creedentials')
+                flash('ERROR: wrong credentials')
                 return render_template('login_form.html', username=username)
         else:
             flash('ERROR: username not found')
@@ -142,10 +142,19 @@ def login():
 
 
 
-@app.route('/member')
-@roles_permitted(['member'])
-def member():
-    return render_template('base_member.html')
+@app.route('/employee')
+@roles_permitted(['employee'])
+def employee_dashboard():
+    stats = {
+        "added_week": 3,
+        "added_month": 10,
+        "added_total": 60,
+        "contacted_today": 5,
+        "contacted_week": 25,
+        "contacted_month": 45,
+    }
+    return render_template('employee_dashboard.html', stats=stats)
+
 
 
 
@@ -162,7 +171,7 @@ def logout():
 
 
 @app.route('/add/task', methods=[ 'GET', 'POST' ])
-@roles_permitted(['member'])
+@roles_permitted(['employee'])
 def add_task():
     if request.method == 'POST':
         pass
@@ -172,7 +181,7 @@ def add_task():
 
 
 @app.route('/add/project', methods=[ 'GET', 'POST' ])
-@roles_permitted(['member'])
+@roles_permitted(['employee'])
 def add_project():
     db = get_db_conn()
     cursor = db.cursor() 
@@ -187,15 +196,6 @@ def add_project():
     else:
         return render_template('add_project.html')
     
-  
-@app.route('/projects')
-@roles_permitted(['member'])  
-def projects():
-    db = get_db_conn()
-    cursor = db.cursor()
-    all_projects = cursor.execute("SELECT * FROM projects WHERE user_id=?", (session['uid'],)).fetchall()
-    return render_template('projects.html', projects=all_projects)
-
 
 if __name__ == '__main__':
     initialize_db()

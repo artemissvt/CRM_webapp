@@ -1,0 +1,62 @@
+{% extends 'base_employee.html' %}
+{% block title %}My activity{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <!-- Title box -->
+    <div class="activity-header-box">
+        <h1 class="activity-title">My activity</h1>
+    </div>
+
+    <!-- Two cards side by side -->
+    <div class="row mt-4 g-4">
+        <!-- Customers added -->
+        <div class="col-md-6">
+            <div class="activity-card">
+                <div class="activity-card-header">
+                    Customers added:
+                </div>
+                <div class="activity-card-body">
+                    <div class="activity-row">
+                        <span>This week</span>
+                        <span>: {{ stats.added_week }} customers</span>
+                    </div>
+                    <div class="activity-row">
+                        <span>This month</span>
+                        <span>: {{ stats.added_month }} customers</span>
+                    </div>
+                    <div class="activity-row">
+                        <span>In total</span>
+                        <span>: {{ stats.added_total }} customers</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customers contacted -->
+        <div class="col-md-6">
+            <div class="activity-card">
+                <div class="activity-card-header">
+                    Customers contacted:
+                </div>
+                <div class="activity-card-body">
+                    <div class="activity-row">
+                        <span>Today</span>
+                        <span>: {{ stats.contacted_today }} customers</span>
+                    </div>
+                    <div class="activity-row">
+                        <span>Last week</span>
+                        <span>: {{ stats.contacted_week }} customers</span>
+                    </div>
+                    <div class="activity-row">
+                        <span>Last month</span>
+                        <span>: {{ stats.contacted_month }} customers</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
