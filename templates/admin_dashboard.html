@@ -1,11 +1,68 @@
 {% extends 'base_admin.html' %}
-
-{% block title %}Admin{% endblock %}
+{% block title %}Admin - View Users{% endblock %}
 
 {% block content %}
 
-<h1>ADMIN DASHBOARD</h1>
+<!-- Centered Dashboard title -->
+<div class="d-flex justify-content-center mb-4">
+    <div class="activity-header-box">
+        <h1 class="admin-dashboard-title">Dashboard</h1>
+    </div>
+</div>
 
-<a href="/logout">Logout</a>
+<div class="row g-4">
+    <div class="col-lg-7 col-xl-6">
+
+        <!-- View Users header box -->
+        <div class="activity-header-box mb-3">
+            <h2 class="activity-title">View Users</h2>
+        </div>
+
+        <!-- Search bar -->
+        <form method="get" class="admin-search mb-3">
+            <div class="input-group">
+                <span class="input-group-text admin-search-icon">🔍</span>
+                <input
+                    type="text"
+                    class="form-control admin-search-input"
+                    name="q"
+                    placeholder="Search for user"
+                    value="{{ q or '' }}"
+                >
+            </div>
+        </form>
+
+        <!-- User list card -->
+        <div class="admin-list-card">
+            <div class="admin-list-card-header">
+                User List:
+            </div>
+
+            <div class="admin-list-table-wrap">
+                <table class="table admin-list-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Role</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for u in users %}
+                        <tr>
+                            <td>{{ u.name }}</td>
+                            <td>{{ u.role }}</td>
+                            <td>{{ u.email }}</td>
+                            <td>{{ u.status }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
 
 {% endblock %}

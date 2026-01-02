@@ -187,9 +187,9 @@ body.bg-app {
 .activity-header-box {
     display: inline-block;
     padding: 10px 18px;
-    background: #e1c8ff;          /* light lilac */
+    background: #e1c8ff;
     border: 2px solid #3b3148;
-    border-radius: 8px;
+    border-radius: 10px;
 }
 
 .activity-title {
@@ -227,4 +227,107 @@ body.bg-app {
 
 .activity-row span:last-child {
     color: #6b4e92;
+}
+
+/* --- Admin dashboard page --- */
+
+/* Search */
+.admin-search .input-group-text.admin-search-icon {
+    background: #e6e6e6;
+    border: 1px solid #a0a0a0;
+}
+
+.admin-search-input {
+    background: #e6e6e6;
+    border: 1px solid #a0a0a0;
+}
+
+/* List card */
+.admin-list-card {
+    background: #e1c8ff;
+    border: 1.5px solid #3b3148;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.admin-list-card-header {
+    font-weight: 700;
+    font-size: 1.2rem;
+    padding: 10px 14px;
+}
+
+.admin-list-table-wrap {
+    padding: 0 10px 10px;
+}
+
+.admin-list-table th,
+.admin-list-table td {
+    background: transparent;
+    border: none;
+    vertical-align: top;
+}
+
+.admin-list-table thead th {
+    font-weight: 600;
+    padding-bottom: 6px;
+}
+
+.admin-list-table tbody td {
+    padding-top: 12px;
+    padding-bottom: 18px;
+}
+
+/*manager*/
+
+.mgr-section-title-box {
+    display: inline-block;
+    background: #e1c8ff;
+    border: 2px solid #3b3148;
+    border-radius: 8px;
+    padding: 12px 18px;
+    min-width: 520px;
+}
+
+.mgr-section-title {
+    margin: 0;
+    font-size: 2.4rem;
+    font-weight: 500;
+    text-decoration: underline;
+    color: #2b2433;
+    line-height: 1.1;
+}
+
+.mgr-card {
+    background: #e1c8ff;
+    border: 1.5px solid #3b3148;
+    border-radius: 6px;
+    overflow: hidden;
+    min-height: 170px;
+}
+
+.mgr-card-header {
+    font-weight: 800;
+    font-size: 1.55rem;
+    padding: 10px 14px;
+    border-bottom: 1px solid #3b3148;
+    color: #111;
+}
+
+.mgr-card-body {
+    padding: 18px 14px 22px;
+    font-size: 1.35rem;
+    color: #6b4e92;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .mgr-dashboard-title-box,
+    .mgr-section-title-box {
+        min-width: auto;
+        width: 100%;
+    }
+
+    .mgr-section-title {
+        font-size: 2rem;
+    }
 }

@@ -1,0 +1,64 @@
+{% extends "base_manager.html" %}
+{% block title %}Manager Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="container-xl">
+
+    <!-- Dashboard title -->
+    <div class="d-flex justify-content-center mb-5">
+        <div class="activity-header-box">
+            <h1 class="activity-title">Dashboard</h1>
+        </div>
+    </div>
+
+    <!-- Customer View header -->
+    <div class="mb-5">
+        <div class="mgr-section-title-box">
+            <h2 class="mgr-section-title">Customer View</h2>
+        </div>
+    </div>
+
+    <!-- Cards grid -->
+    <div class="row g-5">
+
+        <div class="col-md-6">
+            <div class="mgr-card">
+                <div class="mgr-card-header">Lead customers:</div>
+                <div class="mgr-card-body">
+                    {{ stats.lead }} customers
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="mgr-card">
+                <div class="mgr-card-header">Active customers:</div>
+                <div class="mgr-card-body">
+                    {{ stats.active }} customers
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="mgr-card">
+                <div class="mgr-card-header">Inactive customers:</div>
+                <div class="mgr-card-body">
+                    {{ stats.inactive }} customers
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="mgr-card">
+                <div class="mgr-card-header">Cancelled customers:</div>
+                <div class="mgr-card-body">
+                    {{ stats.cancelled }} customers
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

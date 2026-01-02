@@ -131,6 +131,8 @@ def login():
                     return redirect('/employee')
                 elif user['role'] == 'admin':
                     return redirect('/admin')
+                elif user['role'] == 'manager':
+                    return redirect('/manager')
             else:
                 flash('ERROR: wrong credentials')
                 return render_template('login_form.html', username=username)
@@ -156,12 +158,31 @@ def employee_dashboard():
     return render_template('employee_dashboard.html', stats=stats)
 
 
+@app.route('/manager')
+@roles_permitted(['manager'])
+def manager_dashboard():
+    #temp list 
+    stats = {
+    "lead": 206,
+    "active": 568,
+    "inactive": 126,
+    "cancelled": 74
+}
 
+    return render_template("manager_dashboard.html", stats=stats)
 
 @app.route('/admin')
 @roles_permitted(['admin'])
-def admin():
-    return render_template('admin_dashboard.html')
+def admin_dashboard():
+    # Temporary demo list
+    users = [
+        {"name": "Dean Forester", "role": "Employee", "email": "dforester@ourco.com", "status": "Active"},
+        {"name": "Skyler White", "role": "Employee", "email": "skylerwh@ourco.com", "status": "Active"},
+        {"name": "Susan Collins", "role": "Manager", "email": "susancollins@ourco.com", "status": "Inactive"},
+        {"name": "Kimberley Chambers", "role": "Admin", "email": "kimbchamb@ourco.com", "status": "Active"},
+    ]
+    return render_template("admin_dashboard.html", users=users)
+
 
     
 @app.route('/logout')
