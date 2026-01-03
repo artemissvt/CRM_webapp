@@ -157,6 +157,12 @@ def employee_dashboard():
     }
     return render_template('employee_dashboard.html', stats=stats)
 
+@app.route('/employee/viewcust')
+@roles_permitted(['employee'])
+def employee_dashboard():
+    stats = {
+    }
+    return render_template('employee_view_cust.html', stats=stats)
 
 @app.route('/manager')
 @roles_permitted(['manager'])

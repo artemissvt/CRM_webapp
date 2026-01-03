@@ -12,31 +12,55 @@
 </head>
 
 <body class="bg-app">
+<header class="crm-topbar">
+  <div class="container-fluid d-flex align-items-center justify-content-between">
 
-    <!-- Top bar -->
-    <header class="crm-topbar">
-        <div class="container-fluid d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center">
-                <div class="crm-logo-icon">
-                    <div class="crm-logo-inner">
-                        <div class="crm-logo-dot"></div>
-                    </div>
-                </div>
-                <span class="crm-logo-text ms-2">CRM</span>
-            </div>
-
-            <button class="crm-menu-button" type="button" aria-label="Open navigation">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
+    <!-- logo -->
+    <div class="d-flex align-items-center">
+      <div class="crm-logo-icon">
+        <div class="crm-logo-inner">
+          <div class="crm-logo-dot"></div>
         </div>
-    </header>
+      </div>
+      <span class="crm-logo-text ms-2">CRM</span>
+    </div>
 
-    <!-- Page content: ONLY ONE BLOCK -->
-    <main class="crm-main">
-        {% block content %}{% endblock %}
-    </main>
+    <!-- menu -->
+    <button id="hamburgerBtn" class="hamburger-btn" aria-label="Open menu">☰</button>
 
+  </div>
+</header>
+
+<div id="sideMenu" class="side-menu">
+  <nav class="menu-links">
+
+    {% if session.get('role') == 'admin' %}
+        <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+
+    {% elif session.get('role') == 'manager' %}
+        <a href="{{ url_for('manager_dashboard') }}">Dashboard</a>
+        
+    {% elif session.get('role') == 'employee' %}
+        <a href="{{ url_for('employee_dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('employee_view_cus') }}">View Customer</a>
+        <a href="{{ url_for('employee_manage_cus') }}">Manage Customer</a>
+        <a href="{{ url_for('employee_add_cus_cont') }}">Add Customer Contact</a>
+            {% endif %}
+
+    <hr>
+
+         <a href="{{ url_for('logout') }}" class="logout">Logout</a>
+  </nav>
+</div>
+
+<main class="crm-page">
+  <div class="crm-content">
+    {% block content %}{% endblock %}
+  </div>
+</main>
+
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
+
 </html>

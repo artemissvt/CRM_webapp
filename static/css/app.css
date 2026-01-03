@@ -118,8 +118,8 @@ body.bg-app {
 /* --- Top bar --- */
 
 .crm-topbar {
-    background: #c7a6f3;              /* light purple similar to Figma */
-    padding: 8px 16px;
+    background: #c7a6f3;
+    padding: 15px 16px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
@@ -229,7 +229,15 @@ body.bg-app {
     color: #6b4e92;
 }
 
-/* --- Admin dashboard page --- */
+.crm-page {
+  padding: 32px 24px;
+}
+
+.crm-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
 
 /* Search */
 .admin-search .input-group-text.admin-search-icon {
@@ -330,4 +338,64 @@ body.bg-app {
     .mgr-section-title {
         font-size: 2rem;
     }
+}
+
+/* Hamburger button */
+.hamburger-btn {
+    font-size: 1.8rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+/* Side menu (hidden by default) */
+.side-menu {
+    position: fixed;
+    top: 0;
+    right: -260px;           /* hidden off-screen */
+    width: 260px;
+    height: 100vh;
+    background: #e1c8ff;
+    border-left: 2px solid #3b3148;
+    padding: 20px;
+    transition: right 0.3s ease;
+    z-index: 1000;
+}
+
+/* When menu is open */
+.side-menu.open {
+    right: 0;
+}
+
+/* Menu links */
+.menu-links {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.menu-links a {
+    text-decoration: none;
+    font-size: 1.1rem;
+    color: #2b2433;
+}
+
+.menu-links a.logout {
+    color: darkred;
+}
+
+.crm-topbar {
+    position: relative;
+    padding-right: 60px;
+}
+
+.hamburger-btn {
+    position: absolute;
+    top: -8px;
+    right: 16px;
+    font-size: 3rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    z-index: 2;
 }
