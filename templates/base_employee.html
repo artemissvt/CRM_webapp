@@ -43,9 +43,8 @@
     {% elif session.get('role') == 'employee' %}
         <a href="{{ url_for('employee_dashboard') }}">Dashboard</a>
         <a href="{{ url_for('employee_view_cus') }}">View Customer</a>
-        <a href="{{ url_for('employee_manage_cus') }}">Manage Customer</a>
-        <a href="{{ url_for('employee_add_cus_cont') }}">Add Customer Contact</a>
-            {% endif %}
+        <a href="{{ url_for('employee_add_cus_cont') }}">Add Customer Contact</a>    
+        {% endif %}
 
     <hr>
 

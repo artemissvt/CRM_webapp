@@ -157,12 +157,65 @@ def employee_dashboard():
     }
     return render_template('employee_dashboard.html', stats=stats)
 
-@app.route('/employee/viewcust')
+@app.route('/employee/customers')
 @roles_permitted(['employee'])
-def employee_dashboard():
+def employee_view_cus():
     stats = {
+        "cus_name": "Example company co",
+        "contact_per": "Mr John Doe",
+        "email": "examplco@gmail.com",
+        "contact_phone": "+30 210 9999999",
+        "address": "Vassilisis Amalias 38, Athens 105 58",
+        "website": "examplecomco.com",
+        "last_contact": "29/10/2025",
+        "next_contact": "5/11/2025",
+        "notes": "Any notes the employee might have",
+        "cus_type": "Lead",
+        "industry": "Retail",
+        "rev_value": "2.000.000€",
+        "date_added": "28/10/2025",
+        "added_by": "Luke Danes"
+
     }
-    return render_template('employee_view_cust.html', stats=stats)
+    return render_template('employee_view_cus.html', stats = stats)
+
+@app.route('/employee/customers/<int:customer_id>/contacts/new', methods=['GET', 'POST'])
+@roles_permitted(['employee'])
+def employee_add_contact(customer_id):
+    if request.method == 'POST':
+        contacted_at = request.form.get('contacted_at', '').strip()
+        contact_type = request.form.get('contact_type', '').strip()
+        summary = request.form.get('summary', '').strip()
+        notes = request.form.get('notes', '').strip()
+        next_contact_at = request.form.get('next_contact_at', '').strip()
+
+        # Basic validation (server-side)
+        if not contacted_at or not contact_type or not summary:
+            flash("ERROR: Please fill Contact date, Contact type, and Summary.")
+            return render_template('employee_add_contact.html', customer_id=customer_id)
+
+        db = get_db_conn()
+        cursor = db.cursor()
+
+        cursor.execute("""
+            INSERT INTO customer_contacts
+            (customer_id, contacted_at, contact_type, summary, notes, next_contact_at, created_by_user_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            customer_id,
+            contacted_at,
+            contact_type,
+            summary,
+            notes if notes else None,
+            next_contact_at if next_contact_at else None,
+            session.get('uid')
+        ))
+
+        db.commit()
+
+        return redirect(url_for('employee_view_cus', customer_id=customer_id))
+
+    return render_template('employee_add_contact.html', customer_id=customer_id)
 
 @app.route('/manager')
 @roles_permitted(['manager'])
@@ -174,8 +227,31 @@ def manager_dashboard():
     "inactive": 126,
     "cancelled": 74
 }
-
     return render_template("manager_dashboard.html", stats=stats)
+
+@app.route('/manager/viewemplo')
+@roles_permitted(['manager'])
+def manager_view_emplo():
+    #temp list 
+    stats = {
+    "lead": 206,
+    "active": 568,
+    "inactive": 126,
+    "cancelled": 74
+}
+    return render_template("manager_view_emplo.html", stats=stats)
+
+@app.route('/manager/viewcus')
+@roles_permitted(['manager'])
+def manager_view_cus():
+    #temp list 
+    stats = {
+    "lead": 206,
+    "active": 568,
+    "inactive": 126,
+    "cancelled": 74
+}
+    return render_template("manager_view_cus.html", stats=stats)
 
 @app.route('/admin')
 @roles_permitted(['admin'])

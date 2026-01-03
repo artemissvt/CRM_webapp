@@ -1,0 +1,63 @@
+{% extends "base_employee.html" %}
+{% block title %}Add Contact{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-center mb-4">
+  <div class="activity-header-box">
+    <h1 class="admin-dashboard-title">Add Customer Contact</h1>
+  </div>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+
+    {% for message in get_flashed_messages() %}
+      <div class="alert alert-danger">{{ message }}</div>
+    {% endfor %}
+
+    <div class="activity-card">
+      <div class="activity-card-header">Contact Details</div>
+
+      <div class="activity-card-body">
+        <form method="post">
+
+          <div class="mb-3">
+            <label class="form-label">Contact date</label>
+            <input name="contacted_at" type="date" class="form-control" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Contact type</label>
+            <select name="contact_type" class="form-select" required>
+              <option value="Call">Call</option>
+              <option value="Email">Email</option>
+              <option value="Meeting">Meeting</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Summary</label>
+            <input name="summary" type="text" class="form-control" maxlength="200" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Notes (optional)</label>
+            <textarea name="notes" class="form-control" rows="4"></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Next contact date (optional)</label>
+            <input name="next_contact_at" type="date" class="form-control">
+          </div>
+
+          <button class="btn btn-primary" type="submit">Save contact</button>
+          <a class="btn btn-outline-secondary" href="{{ url_for('employee_view_cus', customer_id=customer_id) }}">Cancel</a>
+
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
