@@ -7,6 +7,10 @@ app = Flask(__name__)
 app.config['SESSION_TYPE'] = 'filesystem'
 app.secret_key = "akjdsbkjas&^absdjkajbdkasbdksajbdksadbkbj"
 
+def get_db_connection():
+    conn = sqlite3.connect("task_manager.db")
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def roles_permitted(roles):
     def decorator(f):
@@ -41,31 +45,6 @@ def initialize_db():
                         role TEXT DEFAULT 'member',
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
-                   """)
-    
-    # Projects table 
-    cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS projects (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name TEXT NOT NULL,
-                        description TEXT,  
-                        user_id INTEGER NOT NULL, 
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (user_id) REFERENCES users (id)
-                    )
-                   """)
-    
-    # Tasks table 
-    cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS tasks (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name TEXT NOT NULL,
-                        description TEXT, 
-                        project_id INTEGER NOT NULL,
-                        completed INTEGER DEFAULT 0,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (project_id) REFERENCES projects (id)
-                    )        
                    """)
     
     db.commit()
@@ -179,6 +158,59 @@ def employee_view_cus():
     }
     return render_template('employee_view_cus.html', stats = stats)
 
+@app.route('/employee/addcustomer', methods=["GET", "POST"])
+@roles_permitted(['employee'])
+def employee_add_cus():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    if request.method == "POST":
+        customer_name   = request.form["customer_name"]
+        contact_person  = request.form.get("contact_person")
+        email           = request.form.get("email")
+        phone           = request.form.get("phone")
+        address         = request.form.get("address")
+        website         = request.form.get("website")
+        type_           = request.form.get("type")
+        industry        = request.form.get("industry")
+        rev_value_euro  = request.form.get("rev_value_euro")
+
+        # Who created the customer:
+        # ASSUMPTION: you already know the logged-in user
+        # For now, we’ll hardcode OR read from session
+        cur.execute("""
+            SELECT id FROM employees
+            WHERE username = ?
+        """, ("swhite@crm.gr",))   # replace with session user later
+        created_by_user_id = cur.fetchone()["id"]
+
+        cur.execute("""
+            INSERT INTO customers
+            (customer_name, contact_person, email, phone, address, website,
+             type, industry, rev_value_euro, date_added, created_by_user_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            customer_name,
+            contact_person,
+            email,
+            phone,
+            address,
+            website,
+            type_,
+            industry,
+            rev_value_euro,
+            date.today().isoformat(),
+            created_by_user_id
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect(url_for("employee_dashboard"))
+
+    conn.close()
+    return render_template("employee_add_cus.html")
+
 @app.route('/employee/customers/<int:customer_id>/contacts/new', methods=['GET', 'POST'])
 @roles_permitted(['employee'])
 def employee_add_contact(customer_id):
@@ -229,16 +261,100 @@ def manager_dashboard():
 }
     return render_template("manager_dashboard.html", stats=stats)
 
-@app.route('/manager/viewemplo')
-@roles_permitted(['manager'])
+@app.route("/manager/viewemployee")
 def manager_view_emplo():
-    #temp list 
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # Total employees
+    cur.execute("SELECT COUNT(*) FROM employees;")
+    total_empl = cur.fetchone()[0]
+
+    # Total customers
+    cur.execute("SELECT COUNT(*) FROM customers;")
+    total_cus = cur.fetchone()[0]
+
+    # Total contacts
+    cur.execute("SELECT COUNT(*) FROM customer_contact;")
+    total_cont = cur.fetchone()[0]
+
+    # Contacts this month (activity count)
+    cur.execute("""
+        SELECT COUNT(*)
+        FROM customer_contact
+        WHERE last_contact >= date('now','start of month')
+          AND last_contact <  date('now','start of month','+1 month');
+    """)
+    contacts_this_month = cur.fetchone()[0]
+
+    # Average contacts per employee (this month / employees)
+    average_cont = round(contacts_this_month / total_empl, 2)
+
+    # Best employee of the month = more active
+    cur.execute("""
+        SELECT e.username, COUNT(*) AS activity_count
+        FROM customer_contact cc
+        JOIN employees e ON e.id = cc.created_by_user_id
+        WHERE cc.last_contact >= date('now','start of month')
+          AND cc.last_contact <  date('now','start of month','+1 month')
+        GROUP BY e.id
+        ORDER BY activity_count DESC
+        LIMIT 1;
+    """)
+    row = cur.fetchone()
+    top_employee = row[0] if row else None
+
+    #  Contacts per employee this month (for bar chart)
+    cur.execute("""
+        SELECT e.username AS name, COUNT(*) AS count
+        FROM customer_contact cc
+        JOIN employees e ON e.id = cc.created_by_user_id
+        WHERE cc.last_contact >= date('now','start of month')
+          AND cc.last_contact <  date('now','start of month','+1 month')
+        GROUP BY e.id
+        ORDER BY count DESC;
+    """)
+    month_contacts = [{"name": r[0], "count": r[1]} for r in cur.fetchall()]
+
+    # Employee list 
+    cur.execute("""
+        SELECT
+          e.username AS name,
+
+          (SELECT COUNT(*)
+           FROM customers c
+           WHERE c.created_by_user_id = e.id
+          ) AS customers_added_total,
+
+          (SELECT COUNT(DISTINCT cc.customer_id)
+           FROM customer_contact cc
+           WHERE cc.created_by_user_id = e.id
+          ) AS customers_contacted_total
+
+        FROM employees e
+        ORDER BY customers_contacted_total DESC, customers_added_total DESC, e.username;
+    """)
+    employee_list = [
+        {
+            "name": r[0],
+            "customers_added_total": r[1],
+            "customers_contacted_total": r[2],
+        }
+        for r in cur.fetchall()
+    ]
+
+    conn.close()
+
     stats = {
-    "lead": 206,
-    "active": 568,
-    "inactive": 126,
-    "cancelled": 74
-}
+        "total_empl": total_empl,
+        "total_cus": total_cus,
+        "total_cont": total_cont,
+        "average_cont": average_cont,
+        "top_employee": top_employee,
+        "month_contacts": month_contacts,
+        "employee_list": employee_list,
+        }
+
     return render_template("manager_view_emplo.html", stats=stats)
 
 @app.route('/manager/viewcus')
@@ -264,7 +380,6 @@ def admin_dashboard():
         {"name": "Kimberley Chambers", "role": "Admin", "email": "kimbchamb@ourco.com", "status": "Active"},
     ]
     return render_template("admin_dashboard.html", users=users)
-
 
     
 @app.route('/logout')

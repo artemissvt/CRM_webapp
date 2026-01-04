@@ -28,98 +28,97 @@
                 >
             </div>
         </form>
-<div class="d-flex flex-column gap-4"> 
-    <div class="row g-4">
-        <!-- Main info -->
-        <div class="col-md-6">
-            <div class="activity-card">
-                <div class="activity-card-header">
-                    Main Info:
-                </div>
-                <div class="activity-card-body">
-                    <div class="activity-row">
-                        <span>Customer name:</span>
-                        <span>: {{ stats.cus_name }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Contact Person:</span>
-                        <span>: {{ stats.contact_per }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Email:</span>
-                        <span>: {{ stats.email }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Contact Phone:</span>
-                        <span>: {{ stats.contact_phone }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Address:</span>
-                        <span>: {{ stats.address }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Website:</span>
-                        <span>: {{ stats.website }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+<div class="d-flex flex-column gap-4">
 
-        <!-- Activity history -->
-        <div class="col-md-6">
-            <div class="activity-card">
-                <div class="activity-card-header">
-                    Activity History:
-                </div>
-                <div class="activity-card-body">
-                    <div class="activity-row">
-                        <span>Last Contacted:</span>
-                        <span>: {{ stats.last_contact }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Next Contact:</span>
-                        <span>: {{ stats.next_contact }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Notes:</span>
-                        <span>: {{ stats.notes }}</span>
-                    </div>
-                </div>
-            </div>
+  <div class="row g-4">
+    <!-- General Employee Info -->
+    <div class="col-md-6">
+      <div class="activity-card">
+        <div class="activity-card-header">General Employee Info</div>
+
+        <div class="activity-card-body">
+          <div class="activity-row">
+            <span>Total employees</span><span>: {{ stats.total_empl }}</span>
+          </div>
+          <div class="activity-row">
+            <span>Total customers</span><span>: {{ stats.total_cus }}</span>
+          </div>
+          <div class="activity-row">
+            <span>Total contacts</span><span>: {{ stats.total_cont }}</span>
+          </div>
+          <div class="activity-row">
+            <span>Average contacts per employee</span><span>: {{ stats.average_cont }}</span>
+          </div>
+          <div class="activity-row">
+            <span>Top employee</span><span>: {{ stats.top_employee_name }}</span>
+          </div>
         </div>
+      </div>
     </div>
 
-    <!-- One card on the bottom -->
-     <div class="col-md-6">
-            <div class="activity-card">
-                <div class="activity-card-header">
-                    Bussiness Info:
+    <!-- Contacts per Employee this month (bars) -->
+    <div class="col-md-6">
+      <div class="activity-card">
+        <div class="activity-card-header">Contacts per Employee this month</div>
+
+        <div class="activity-card-body">
+          {# stats.month_contacts should be a list of dicts: [{"name": "...", "count": 48}, ...] #}
+          {% set max_val = (stats.month_contacts | map(attribute='count') | max) if stats.month_contacts else 1 %}
+
+          <div class="bars">
+            {% for item in stats.month_contacts %}
+              {% set pct = (item.count / max_val * 100) %}
+              <div class="bar-row">
+                <div class="bar-name">{{ item.name }}</div>
+
+                <div class="bar-track" aria-label="contacts bar">
+                  <!--<div class="bar-fill" style="width: {{ pct }}%;"></div>-->
                 </div>
-                <div class="activity-card-body">
-                    <div class="activity-row">
-                        <span>Customer type:</span>
-                        <span>: {{ stats.cus_type }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Industry:</span>
-                        <span>: {{ stats.industry }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Revenue Value:</span>
-                        <span>: {{ stats.rev_value }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Date Added:</span>
-                        <span>: {{ stats.date_added }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Added by:</span>
-                        <span>: {{ stats.added_by }}</span>
-                    </div>
-                </div>
-            </div>
+
+                <div class="bar-value">{{ item.count }}</div>
+              </div>
+            {% endfor %}
+          </div>
+
+          {% if not stats.month_contacts %}
+            <div class="text-muted small">No data for this month.</div>
+          {% endif %}
         </div>
-</div>   
+      </div>
+    </div>
+  </div>
 
+  <!-- Employee List (table) -->
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div class="activity-card">
+        <div class="activity-card-header">Employee List</div>
 
+        <div class="activity-card-body">
+          <div class="emp-table">
+            <div class="emp-head">
+              <div class="emp-col name">Name</div>
+              <div class="emp-col num">Customers Added Totally</div>
+              <div class="emp-col num">Customers Contacted Totally</div>
+            </div>
+
+            {% for e in stats.employee_list %}
+              <div class="emp-row">
+                <div class="emp-col name">{{ e.name }}</div>
+                <div class="emp-col num">{{ e.customers_added_total }}</div>
+                <div class="emp-col num">{{ e.customers_contacted_total }}</div>
+              </div>
+            {% endfor %}
+
+            {% if not stats.employee_list %}
+              <div class="text-muted small mt-2">No employees found.</div>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
 {% endblock %}

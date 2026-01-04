@@ -352,7 +352,7 @@ body.bg-app {
 .side-menu {
     position: fixed;
     top: 0;
-    right: -260px;           /* hidden off-screen */
+    right: -260px; /* off-screen */
     width: 260px;
     height: 100vh;
     background: #e1c8ff;
@@ -398,4 +398,10 @@ body.bg-app {
     border: none;
     cursor: pointer;
     z-index: 2;
+}
+
+.emp-head,
+.emp-row {
+  display: grid;
+  grid-template-columns: 1.2fr 0.9fr 1.1fr;
 }
