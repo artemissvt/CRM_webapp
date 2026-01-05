@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
         sideMenu.classList.toggle("open");
     });
 
-    // Optional: close menu when clicking outside
+    // close menu when clicking outside
     document.addEventListener("click", function (event) {
         if (
             sideMenu.classList.contains("open") &&

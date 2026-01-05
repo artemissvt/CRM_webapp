@@ -30,8 +30,7 @@
                     class="form-control admin-search-input"
                     name="q"
                     placeholder="Search for user"
-                    value="{{ q or '' }}"
-                >
+                    value="{{ q or '' }}">
             </div>
         </form>
 
@@ -40,7 +39,7 @@
             <div class="admin-list-card-header">
                 User List:
             </div>
-
+            
             <div class="admin-list-table-wrap">
                 <table class="table admin-list-table mb-0">
                     <thead>
@@ -56,7 +55,7 @@
                         <tr>
                             <td>{{ u.name }}</td>
                             <td>{{ u.role }}</td>
-                            <td>{{ u.email }}</td>
+                            <td>{{ u.username }}</td>
                             <td>{{ u.status }}</td>
                         </tr>
                     {% endfor %}

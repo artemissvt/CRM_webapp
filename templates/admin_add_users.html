@@ -1,0 +1,62 @@
+{% extends 'base_admin.html' %}
+{% block title %}Create User{% endblock %}
+
+{% block content %}
+<div class="container-xl mt-4">
+
+
+<!-- Centered Dashboard title -->
+<div class="d-flex justify-content-center mb-4">
+    <div class="activity-header-box">
+        <h1 class="admin-dashboard-title">Create User</h1>
+    </div>
+</div>
+
+<form method="post" action="{{ url_for('admin_add_users') }}">
+
+  <div class="activity-card">
+    <div class="activity-card-header">
+      User Info:
+    </div>
+
+    <div class="activity-card-body">
+
+      <div class="activity-row">
+        <label>Full name:</label>
+        <input type="text" name="name" required>
+      </div>
+
+      <div class="activity-row">
+        <label>Username:</label>
+        <input type="email" name="username">
+      </div>
+
+      <div class="activity-row">
+        <label>Password:</label>
+        <input type="text" name="password">
+      </div>
+
+      <div class="activity-row">
+        <label>Repeat Password:</label>
+        <input type="text" name="repass">
+      </div>
+
+      <div class="activity-row">
+        <label>Role:</label>
+        <input type="text" name="role">
+      </div>
+
+      <div class="activity-row">
+        <label>Hire Date:</label>
+        <input type="text" name="hiredate">
+      </div>
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-primary mt-3">
+    Create User
+  </button>
+  
+
+</form>
+{% endblock %}

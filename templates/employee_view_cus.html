@@ -1,124 +1,92 @@
 {% extends 'base_employee.html' %}
-{% block title %}View Customers{% endblock %}
+{% block title %}View Customer{% endblock %}
 
 {% block content %}
 <div class="container-xl mt-4">
 
-
-<!-- Centered view customer title -->
-<div class="d-flex justify-content-center mb-4">
-    <div class="activity-header-box">
-        <h1 class="admin-dashboard-title">View Customer</h1>
+  <!-- Search bar -->
+  <form method="get" class="admin-search mb-3">
+    <div class="input-group">
+      <span class="input-group-text admin-search-icon">🔍</span>
+      <input
+        type="text"
+        class="form-control admin-search-input"
+        name="q"
+        placeholder="Search for customer"
+        value="{{ q or '' }}"
+      >
+      <button class="btn btn-outline-secondary" type="submit">Search</button>
     </div>
-</div>
+  </form>
 
-<!-- Search bar -->
-        <form method="get" class="admin-search mb-3">
-            <div class="input-group">
-                <span class="input-group-text admin-search-icon">🔍</span>
-                <input
-                    type="text"
-                    class="form-control admin-search-input"
-                    name="q"
-                    placeholder="Search for user"
-                    value="{{ q or '' }}"
-                >
-            </div>
-        </form>
-
-    <!-- Two cards side by side -->
- <div class="d-flex flex-column gap-4"> 
-    <div class="row g-4">
-        <!-- Main info -->
-        <div class="col-md-6">
-            <div class="activity-card">
-                <div class="activity-card-header">
-                    Main Info:
-                </div>
-                <div class="activity-card-body">
-                    <div class="activity-row">
-                        <span>Customer name:</span>
-                        <span>: {{ stats.cus_name }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Contact Person:</span>
-                        <span>: {{ stats.contact_per }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Email:</span>
-                        <span>: {{ stats.email }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Contact Phone:</span>
-                        <span>: {{ stats.contact_phone }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Address:</span>
-                        <span>: {{ stats.address }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Website:</span>
-                        <span>: {{ stats.website }}</span>
-                    </div>
-                </div>
-            </div>
+  <!-- Search results buttons -->
+  {% if customers and customers|length > 0 %}
+    <div class="activity-card mb-3">
+      <div class="activity-card-header">Search results</div>
+      <div class="activity-card-body">
+        <div class="d-flex flex-wrap gap-2">
+          {% for c in customers %}
+            <a class="btn btn-sm btn-outline-primary"
+               href="{{ url_for('employee_view_cus') }}?q={{ q|urlencode }}&customer_id={{ c.id }}">
+              {{ c.customer_name }}
+            </a>
+          {% endfor %}
         </div>
+      </div>
+    </div>
+  {% endif %}
 
-        <!-- Activity history -->
-        <div class="col-md-6">
-            <div class="activity-card">
-                <div class="activity-card-header">
-                    Activity History:
-                </div>
-                <div class="activity-card-body">
-                    <div class="activity-row">
-                        <span>Last Contacted:</span>
-                        <span>: {{ stats.last_contact }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Next Contact:</span>
-                        <span>: {{ stats.next_contact }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Notes:</span>
-                        <span>: {{ stats.notes }}</span>
-                    </div>
-                </div>
-            </div>
+  {% if not customer %}
+    <div class="text-muted mt-4">
+      Search for a customer to view their details.
+    </div>
+  {% else %}
+
+  <div class="row g-4">
+
+    <!-- Main Info -->
+    <div class="col-lg-6">
+      <div class="activity-card">
+        <div class="activity-card-header">Main Info</div>
+        <div class="activity-card-body">
+          <div class="activity-row"><span>Customer Name</span><span>: {{ customer.customer_name or "" }}</span></div>
+          <div class="activity-row"><span>Contact person</span><span>: {{ customer.contact_person or "" }}</span></div>
+          <div class="activity-row"><span>Email</span><span>: {{ customer.email or "" }}</span></div>
+          <div class="activity-row"><span>Contact Phone</span><span>: {{ customer.contact_phone or "" }}</span></div>
+          <div class="activity-row"><span>Address</span><span>: {{ customer.address or "" }}</span></div>
+          <div class="activity-row"><span>Website</span><span>: {{ customer.website or "" }}</span></div>
         </div>
+      </div>
     </div>
 
-    <!-- One card on the bottom -->
-     <div class="col-md-6">
-            <div class="activity-card">
-                <div class="activity-card-header">
-                    Bussiness Info:
-                </div>
-                <div class="activity-card-body">
-                    <div class="activity-row">
-                        <span>Customer type:</span>
-                        <span>: {{ stats.cus_type }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Industry:</span>
-                        <span>: {{ stats.industry }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Revenue Value:</span>
-                        <span>: {{ stats.rev_value }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Date Added:</span>
-                        <span>: {{ stats.date_added }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Added by:</span>
-                        <span>: {{ stats.added_by }}</span>
-                    </div>
-                </div>
-            </div>
+    <!-- Activity history -->
+    <div class="col-lg-6">
+      <div class="activity-card">
+        <div class="activity-card-header">Activity history</div>
+        <div class="activity-card-body">
+          <div class="activity-row"><span>Last contacted</span><span>: {{ activity.last_contact if activity else "" }}</span></div>
+          <div class="activity-row"><span>Next contact</span><span>: {{ activity.next_contact if activity else "" }}</span></div>
+          <div class="activity-row align-items-start"><span>Notes</span><span>: {{ activity.notes if activity else "" }}</span></div>
         </div>
-</div>   
+      </div>
+    </div>
 
+    <!-- Business Info -->
+    <div class="col-lg-6">
+      <div class="activity-card">
+        <div class="activity-card-header">Business Info</div>
+        <div class="activity-card-body">
+          <div class="activity-row"><span>Customer type</span><span>: {{ customer.customer_type or "" }}</span></div>
+          <div class="activity-row"><span>Industry</span><span>: {{ customer.industry or "" }}</span></div>
+          <div class="activity-row"><span>Revenue Value</span><span>: {{ customer.revenue_value_euro or "" }}</span></div>
+          <div class="activity-row"><span>Date added</span><span>: {{ customer.customer_date or "" }}</span></div>
+          <div class="activity-row"><span>Added by</span><span>: {{ customer.added_by or "" }}</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  {% endif %}
 </div>
 {% endblock %}

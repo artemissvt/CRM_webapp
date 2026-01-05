@@ -2,6 +2,7 @@ from flask import Flask, request, render_template, flash, session, redirect
 import sqlite3 
 import hashlib 
 from functools import wraps
+from flask import session, abort, url_for
 
 app = Flask(__name__)
 app.config['SESSION_TYPE'] = 'filesystem'
@@ -10,6 +11,7 @@ app.secret_key = "akjdsbkjas&^absdjkajbdkasbdksajbdksadbkbj"
 def get_db_connection():
     conn = sqlite3.connect("task_manager.db")
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON;")
     return conn
 
 def roles_permitted(roles):
@@ -19,7 +21,7 @@ def roles_permitted(roles):
             if 'uid' in session and session['role'] in roles:
                 return f(*args, **kwargs)
             else:
-                flash(f'ERROR: you need {roles} role to access this page')
+                flash(f'Login again')
                 return redirect('/login')
         return wrapper
     return decorator
@@ -50,46 +52,16 @@ def initialize_db():
     db.commit()
     db.close()
 
-
 def hash_password(username, password):
     pw = username + password
     hashed = hashlib.sha512(pw.encode('utf-8')).hexdigest()
     return hashed
 
-
 @app.route('/')
 def home():
-    return "HOME PAGE"
+    return redirect(url_for('login'))
 
-
-@app.route('/register', methods=[ 'GET', 'POST' ])
-def register():
-    username = ''
-    db = get_db_conn()
-    cursor = db.cursor()
-    if request.method == 'POST':
-        # return(f"{request.form['username']} {request.form['password']} {request.form['password2']}")
-        username = request.form['username']
-        password = request.form['password']
-        password2 = request.form['password2']
-        if password != password2:
-            flash("ERROR: Passwords do not match")
-            return render_template('register_form.html', username=username)
-        else:
-            user = cursor.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
-            if user:
-                flash("ERROR: Username is taken")
-                return render_template('register_form.html', username=username)
-            else: 
-                hashed_password = hash_password(username, password)
-                cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", 
-                               (username, hashed_password))
-                db.commit()
-                return redirect('/login')
-    else:
-        return render_template('register_form.html', username=username)
-
-
+#login
 @app.route('/login', methods=[ 'GET', 'POST' ])
 def login():
     username = ''
@@ -121,144 +93,315 @@ def login():
     else: 
         return render_template('login_form.html', username=username)
 
-
-
+#employee
 @app.route('/employee')
 @roles_permitted(['employee'])
 def employee_dashboard():
-    stats = {
-        "added_week": 3,
-        "added_month": 10,
-        "added_total": 60,
-        "contacted_today": 5,
-        "contacted_week": 25,
-        "contacted_month": 45,
-    }
-    return render_template('employee_dashboard.html', stats=stats)
+    user_id = session.get("uid")
+    if not user_id:
+        return redirect(url_for("login"))
 
-@app.route('/employee/customers')
-@roles_permitted(['employee'])
-def employee_view_cus():
-    stats = {
-        "cus_name": "Example company co",
-        "contact_per": "Mr John Doe",
-        "email": "examplco@gmail.com",
-        "contact_phone": "+30 210 9999999",
-        "address": "Vassilisis Amalias 38, Athens 105 58",
-        "website": "examplecomco.com",
-        "last_contact": "29/10/2025",
-        "next_contact": "5/11/2025",
-        "notes": "Any notes the employee might have",
-        "cus_type": "Lead",
-        "industry": "Retail",
-        "rev_value": "2.000.000€",
-        "date_added": "28/10/2025",
-        "added_by": "Luke Danes"
-
-    }
-    return render_template('employee_view_cus.html', stats = stats)
-
-@app.route('/employee/addcustomer', methods=["GET", "POST"])
-@roles_permitted(['employee'])
-def employee_add_cus():
     conn = get_db_connection()
-    cur = conn.cursor()
+    try:
+        # -----------------------------
+        # Customers added (by this employee)
+        # -----------------------------
+        added_total = conn.execute("""
+            SELECT COUNT(*) AS cnt
+            FROM customers
+            WHERE created_by_user_id = ?;
+        """, (user_id,)).fetchone()["cnt"]
 
-    if request.method == "POST":
-        customer_name   = request.form["customer_name"]
-        contact_person  = request.form.get("contact_person")
-        email           = request.form.get("email")
-        phone           = request.form.get("phone")
-        address         = request.form.get("address")
-        website         = request.form.get("website")
-        type_           = request.form.get("type")
-        industry        = request.form.get("industry")
-        rev_value_euro  = request.form.get("rev_value_euro")
+        # This week (Monday -> today)
+        added_week = conn.execute("""
+            SELECT COUNT(*) AS cnt
+            FROM customers
+            WHERE created_by_user_id = ?
+              AND date(date_added) >= date('now','weekday 1','-7 days')
+              AND date(date_added) <= date('now');
+        """, (user_id,)).fetchone()["cnt"]
 
-        # Who created the customer:
-        # ASSUMPTION: you already know the logged-in user
-        # For now, we’ll hardcode OR read from session
-        cur.execute("""
-            SELECT id FROM employees
-            WHERE username = ?
-        """, ("swhite@crm.gr",))   # replace with session user later
-        created_by_user_id = cur.fetchone()["id"]
+        # This month (calendar month)
+        added_month = conn.execute("""
+            SELECT COUNT(*) AS cnt
+            FROM customers
+            WHERE created_by_user_id = ?
+              AND date(date_added) >= date('now','start of month')
+              AND date(date_added) <  date('now','start of month','+1 month');
+        """, (user_id,)).fetchone()["cnt"]
 
-        cur.execute("""
-            INSERT INTO customers
-            (customer_name, contact_person, email, phone, address, website,
-             type, industry, rev_value_euro, date_added, created_by_user_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            customer_name,
-            contact_person,
-            email,
-            phone,
-            address,
-            website,
-            type_,
-            industry,
-            rev_value_euro,
-            date.today().isoformat(),
-            created_by_user_id
-        ))
+        # Customers contacted (by this employee with session id)
+        contacted_today = conn.execute("""
+            SELECT COUNT(DISTINCT customer_id) AS cnt
+            FROM customer_contact
+            WHERE created_by_user_id = ?
+              AND date(last_contact) = date('now');
+        """, (user_id,)).fetchone()["cnt"]
 
-        conn.commit()
+        # Last week = previous calendar week (Mon-Sun), not "last 7 days"
+        contacted_week = conn.execute("""
+            SELECT COUNT(DISTINCT customer_id) AS cnt
+            FROM customer_contact
+            WHERE created_by_user_id = ?
+              AND date(last_contact) >= date('now','weekday 1','-14 days')
+              AND date(last_contact) <  date('now','weekday 1','-7 days');
+        """, (user_id,)).fetchone()["cnt"]
+
+        # Last month = previous calendar month
+        contacted_month = conn.execute("""
+            SELECT COUNT(DISTINCT customer_id) AS cnt
+            FROM customer_contact
+            WHERE created_by_user_id = ?
+              AND date(last_contact) >= date('now','start of month','-1 month')
+              AND date(last_contact) <  date('now','start of month');
+        """, (user_id,)).fetchone()["cnt"]
+
+    finally:
         conn.close()
 
-        return redirect(url_for("employee_dashboard"))
+    stats = {
+        "added_week": added_week,
+        "added_month": added_month,
+        "added_total": added_total,
+        "contacted_today": contacted_today,
+        "contacted_week": contacted_week,
+        "contacted_month": contacted_month,
+    }
 
-    conn.close()
+    return render_template('employee_dashboard.html', stats=stats)
+
+
+@app.route('/employee/customers', methods=['GET'])
+@roles_permitted(['employee'])
+def employee_view_cus():
+    q = (request.args.get("q") or "").strip()
+    customer_id = (request.args.get("customer_id") or "").strip()
+    conn = get_db_connection()
+    
+
+@app.route('/employee/addcustomer', methods=[ 'GET', 'POST' ])
+@roles_permitted(['employee'])
+def employee_add_cus():
+    db = get_db_conn()
+    cursor = db.cursor() 
+    if request.method == "POST":
+        # read + normalize form fields
+        customer_name  = (request.form.get("customer_name") or "").strip()
+
+        contact_person = (request.form.get("contact_person") or "").strip()
+        email          = (request.form.get("email") or "").strip()
+        phone          = (request.form.get("phone") or "").strip()
+        address        = (request.form.get("address") or "").strip()
+        website        = (request.form.get("website") or "").strip()
+        type_          = (request.form.get("type") or "").strip()
+        industry       = (request.form.get("industry") or "").strip()
+        rev_raw        = (request.form.get("rev_value_euro") or "").strip()
+
+        # data validation
+        if not customer_name:
+            flash("Customer name is required.", "danger")
+            return render_template("employee/addcustomer.html")
+
+        rev_value_euro = None
+        if rev_raw:
+            try:
+                rev_value_euro = float(rev_raw.replace(",", "."))
+            except ValueError:
+                flash("Revenue value must be numeric (e.g., 10000 or 10000.50).", "danger")
+                return render_template("employee/addcustomer.html")
+
+        # Normalize empty strings to None in order for the db to be clean
+        contact_person = contact_person or None
+        email          = email or None
+        phone          = phone or None
+        address        = address or None
+        website        = website or None
+        type_          = type_ or None
+        industry       = industry or None
+
+        # store username/email in session and use it for created by user id
+        if created_by_user_id is None:
+            session_username = session.get("username") 
+
+            if session_username:
+                conn = get_db_connection()
+                try:
+                    row = conn.execute(
+                        "SELECT id FROM employees WHERE username = ?",
+                        (session_username,)
+                    ).fetchone()
+                finally:
+                    conn.close()
+
+                if row is None:
+                    flash("Logged-in employee not found in employees table.", "danger")
+                    return render_template("employee/addcustomer.html")
+
+                created_by_user_id = row["id"]
+
+        # data insert into customers table
+        conn = get_db_connection()
+        try:
+            cur = conn.cursor()
+
+            cur.execute(
+                """
+                INSERT INTO customers
+                (customer_name, contact_person, email, phone,
+                 address, website, type, industry, rev_value_euro,
+                 created_by_user_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    customer_name,
+                    contact_person,
+                    email,
+                    phone,
+                    address,
+                    website,
+                    type_,
+                    industry,
+                    rev_value_euro,
+                    created_by_user_id
+                )
+            )
+
+            conn.commit()
+            new_id = cur.lastrowid
+
+        except sqlite3.IntegrityError as e:
+            conn.rollback()
+            flash(f"Database constraint error: {e}", "danger")
+            return render_template("employee/addcustomer.html")
+
+        finally:
+            conn.close()
+
+        flash(f"Customer '{customer_name}' was created successfully.", "success")
+        return redirect(url_for("employee_add_cus", customer_id=new_id))
+
     return render_template("employee_add_cus.html")
 
-@app.route('/employee/customers/<int:customer_id>/contacts/new', methods=['GET', 'POST'])
-@roles_permitted(['employee'])
-def employee_add_contact(customer_id):
-    if request.method == 'POST':
-        contacted_at = request.form.get('contacted_at', '').strip()
-        contact_type = request.form.get('contact_type', '').strip()
-        summary = request.form.get('summary', '').strip()
-        notes = request.form.get('notes', '').strip()
-        next_contact_at = request.form.get('next_contact_at', '').strip()
+@app.route("/employee/addcustomercontact", methods=["GET", "POST"])
+@roles_permitted(["employee"])
+def employee_add_cus_cont():
+    if request.method == "POST":
+        # --- Read fields exactly as your HTML sends them ---
+        customer_name  = (request.form.get("customer_name") or "").strip()
+        last_contact = (request.form.get("customer_name") or "").strip()
+        contact_person = (request.form.get("contact_person") or "").strip() or None
+        email          = (request.form.get("email") or "").strip() or None
+        phone          = (request.form.get("phone") or "").strip() or None
+        topics         = (request.form.get("topics") or "").strip()
+        notes          = (request.form.get("notes") or "").strip() or None
+        
+        # --- Validate required fields ---
+        if not customer_name:
+            flash("ERROR: Customer name is required.", "danger")
+            return render_template("employee_add_cus_cont.html")
 
-        # Basic validation (server-side)
-        if not contacted_at or not contact_type or not summary:
-            flash("ERROR: Please fill Contact date, Contact type, and Summary.")
-            return render_template('employee_add_contact.html', customer_id=customer_id)
+        if not topics:
+            flash("ERROR: Topics discussed is required.", "danger")
+            return render_template("employee_add_cus_cont.html")
 
-        db = get_db_conn()
-        cursor = db.cursor()
+        # Must be logged in (your login sets session['uid'])
+        created_by_user_id = session.get("uid")
+        if not created_by_user_id:
+            flash("ERROR: Session expired. Please log in again.", "danger")
+            return redirect(url_for("login"))
 
-        cursor.execute("""
-            INSERT INTO customer_contacts
-            (customer_id, contacted_at, contact_type, summary, notes, next_contact_at, created_by_user_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (
-            customer_id,
-            contacted_at,
-            contact_type,
-            summary,
-            notes if notes else None,
-            next_contact_at if next_contact_at else None,
-            session.get('uid')
-        ))
+        conn = get_db_connection()
+        try:
+            # 1) Find customer_id by exact name match
+            rows = conn.execute("""
+                SELECT id
+                FROM customers
+                WHERE customer_name = ?
+            """, (customer_name,)).fetchall()
 
-        db.commit()
+            if not rows:
+                flash("ERROR: Customer not found. Please create the customer first (exact name match).", "danger")
+                return render_template("employee_add_cus_cont.html")
 
-        return redirect(url_for('employee_view_cus', customer_id=customer_id))
+            if len(rows) > 1:
+                flash("ERROR: Multiple customers have this name. Please use a unique customer name.", "danger")
+                return render_template("employee_add_cus_cont.html")
 
-    return render_template('employee_add_contact.html', customer_id=customer_id)
+            customer_id = rows[0]["id"]
 
+            # Insert into customer_contact (aligned with your table columns)
+            try:
+                conn.execute("""
+                    INSERT INTO customer_contact
+                        (next_contact, topics, notes, created_by_user_id, customer_id, last_contact)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (
+                    None,             # next_contact (you don't collect it in this form)
+                    topics,           # topics (WARNING: your DB has UNIQUE here)
+                    notes,            # notes
+                    created_by_user_id,
+                    customer_id,
+                    last_contact
+                ))
+                conn.commit()
+
+            except sqlite3.IntegrityError as e:
+                conn.rollback()
+                flash(f"Database error: {e}", "danger")
+                return render_template("employee_add_cus_cont.html")
+
+        finally:
+            conn.close()
+
+        flash("New customer contact saved successfully.", "success")
+        return redirect(url_for("employee_dashboard"))
+
+    # GET
+    return render_template("employee_add_cus_cont.html")
+
+#manager
 @app.route('/manager')
 @roles_permitted(['manager'])
 def manager_dashboard():
-    #temp list 
-    stats = {
-    "lead": 206,
-    "active": 568,
-    "inactive": 126,
-    "cancelled": 74
-}
+    conn = get_db_connection()
+    try:
+        # If your column is not type, change it here once.
+        col = "type"
+
+        lead = conn.execute(f"""
+            SELECT COUNT(*) AS cnt
+            FROM customers
+            WHERE {col} = ?;
+        """, ("lead",)).fetchone()["cnt"]
+
+        active = conn.execute(f"""
+            SELECT COUNT(*) AS cnt
+            FROM customers
+            WHERE {col} = ?;
+        """, ("active",)).fetchone()["cnt"]
+
+        inactive = conn.execute(f"""
+            SELECT COUNT(*) AS cnt
+            FROM customers
+            WHERE {col} = ?;
+        """, ("inactive",)).fetchone()["cnt"]
+
+        cancelled = conn.execute(f"""
+            SELECT COUNT(*) AS cnt
+            FROM customers
+            WHERE {col} = ?;
+        """, ("cancelled",)).fetchone()["cnt"]
+
+        stats = {
+            "lead": lead,
+            "active": active,
+            "inactive": inactive,
+            "cancelled": cancelled
+        }
+
+    finally:
+        conn.close()
+
     return render_template("manager_dashboard.html", stats=stats)
 
 @app.route("/manager/viewemployee")
@@ -360,27 +503,142 @@ def manager_view_emplo():
 @app.route('/manager/viewcus')
 @roles_permitted(['manager'])
 def manager_view_cus():
-    #temp list 
-    stats = {
-    "lead": 206,
-    "active": 568,
-    "inactive": 126,
-    "cancelled": 74
-}
-    return render_template("manager_view_cus.html", stats=stats)
+    q = (request.args.get("q") or "").strip()
 
+    like = f"%{q}%"
+
+    conn = get_db_connection()
+    try:
+        rows = conn.execute("""
+            SELECT
+                c.id AS customer_id,
+                c.customer_name AS name,
+                COUNT(cc.contact_id) AS contact_count,
+                MAX(cc.last_contact) AS last_contact,
+  CASE
+    WHEN MAX(cc.last_contact) IS NULL THEN NULL
+    ELSE CAST((julianday('now') - julianday(MAX(cc.last_contact))) AS INTEGER)
+  END AS days_since_last_contact
+FROM customers c
+LEFT JOIN customer_contact cc
+  ON cc.customer_id = c.id
+WHERE c.customer_name LIKE ?
+GROUP BY c.id, c.customer_name
+ORDER BY
+  contact_count ASC,
+  (last_contact IS NOT NULL) ASC,
+  last_contact ASC
+LIMIT 5;
+
+        """, 
+        (like,)).fetchall()
+
+    finally:
+        conn.close()
+
+    # Map DB rows to what your template expects: stats.employee_list with fields:
+    # e.name, e.haventresp, e.lastcont
+    employee_list = []
+    for r in rows:
+        last_contact = r["last_contact"]  # may be None if never contacted
+        days = r["days_since_last_contact"]
+
+        employee_list.append({
+            "name": r["name"],
+            "haventresp": ("Never" if last_contact is None else f"{days} days"),
+            "lastcont": ("Never" if last_contact is None else last_contact),
+        })
+
+    stats = {
+        "employee_list": employee_list
+    }
+
+    return render_template("manager_view_cus.html", stats=stats, q=q)
+
+#admin
 @app.route('/admin')
 @roles_permitted(['admin'])
 def admin_dashboard():
-    # Temporary demo list
-    users = [
-        {"name": "Dean Forester", "role": "Employee", "email": "dforester@ourco.com", "status": "Active"},
-        {"name": "Skyler White", "role": "Employee", "email": "skylerwh@ourco.com", "status": "Active"},
-        {"name": "Susan Collins", "role": "Manager", "email": "susancollins@ourco.com", "status": "Inactive"},
-        {"name": "Kimberley Chambers", "role": "Admin", "email": "kimbchamb@ourco.com", "status": "Active"},
-    ]
-    return render_template("admin_dashboard.html", users=users)
+    q = (request.args.get("q") or "").strip()
+    like = f"%{q}%"
 
+    conn = get_db_connection()
+    try:
+        rows = conn.execute("""
+            SELECT
+                name,
+                role,
+                username,
+                status
+            FROM users
+            WHERE name LIKE ? OR username LIKE ?
+            ORDER BY name ASC;
+        """, (like, like)).fetchall()
+    finally:
+        conn.close()
+
+    users = [
+        {
+            "name": r["name"],
+            "role": r["role"],
+            "username": r["username"],
+            "status": r["status"],
+        }
+        for r in rows
+    ]
+
+    return render_template(
+        "admin_dashboard.html",
+        users=users,
+        q=q
+    )
+
+
+@app.route('/admin/adduser', methods=['GET', 'POST'])
+@roles_permitted(['admin'])
+def admin_add_users():
+    if request.method == 'POST':
+        fullname = (request.form.get('name') or '').strip()
+        username = (request.form.get('username') or '').strip()
+        role     = (request.form.get('role') or '').strip()
+        password = request.form.get('password') or ''
+        repass   = request.form.get('repass') or ''
+
+        if not username or not fullname:
+            flash("ERROR: Full name and username are required.", "danger")
+            return render_template('admin_add_users.html', username=username)
+
+        if password != repass:
+            flash("ERROR: Passwords do not match", "danger")
+            return render_template('admin_add_users.html', username=username)
+
+        db = get_db_conn()
+        try:
+            cursor = db.cursor()
+            user = cursor.execute(
+                "SELECT 1 FROM users WHERE username=?",
+                (username,)
+            ).fetchone()
+
+            if user:
+                flash("ERROR: Username is taken", "danger")
+                return render_template('admin_add_users.html', username=username)
+
+            hashed_password = hash_password(username, password)
+
+            cursor.execute("""
+                INSERT INTO users (name, username, password, role, status)
+                VALUES (?, ?, ?, ?, ?)
+            """, (fullname, username, hashed_password, role, "Active"))
+
+            db.commit()
+        finally:
+            db.close()
+
+        flash("User created successfully.", "success")
+        return redirect(url_for('admin_add_users'))
+
+    return render_template('admin_add_users.html')
     
 @app.route('/logout')
 def logout():

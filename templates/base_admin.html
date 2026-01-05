@@ -38,6 +38,7 @@
 
     {% if session.get('role') == 'admin' %}
         <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('admin_add_users') }}">Create User</a>
 
     {% elif session.get('role') == 'manager' %}
         <a href="{{ url_for('manager_dashboard') }}">Dashboard</a>
@@ -48,7 +49,7 @@
 
     <hr>
 
-    <!--     <a href="{{ url_for('logout') }}" class="logout">Logout</a> -->
+    <a href="{{ url_for('logout') }}" class="logout">Logout</a> 
   </nav>
 </div>
 

@@ -31,94 +31,34 @@
 <div class="d-flex flex-column gap-4"> 
     <div class="row g-4">
         <!-- Main info -->
-        <div class="col-md-6">
-            <div class="activity-card">
-                <div class="activity-card-header">
-                    Main Info:
-                </div>
-                <div class="activity-card-body">
-                    <div class="activity-row">
-                        <span>Customer name:</span>
-                        <span>: {{ stats.cus_name }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Contact Person:</span>
-                        <span>: {{ stats.contact_per }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Email:</span>
-                        <span>: {{ stats.email }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Contact Phone:</span>
-                        <span>: {{ stats.contact_phone }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Address:</span>
-                        <span>: {{ stats.address }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Website:</span>
-                        <span>: {{ stats.website }}</span>
-                    </div>
-                </div>
+        <div class="row g-4">
+    <div class="col-md-6">
+      <div class="activity-card">
+        <div class="activity-card-header">Customers with the least contact</div>
+
+        <div class="activity-card-body">
+          <div class="emp-table">
+            <div class="emp-head">
+              <div class="emp-col name">Name</div>
+              <div class="emp-col num">Haven't responded in</div>
+              <div class="emp-col num">Last contact</div>
             </div>
+
+            {% for e in stats.employee_list %}
+              <div class="emp-row">
+                <div class="emp-col name">{{ e.name }}</div>
+                <div class="emp-col num">{{ e.haventresp }}</div>
+                <div class="emp-col num">{{ e.lastcont }}</div>
+              </div>
+            {% endfor %}
+          </div>
         </div>
 
-        <!-- Activity history -->
-        <div class="col-md-6">
-            <div class="activity-card">
-                <div class="activity-card-header">
-                    Activity History:
-                </div>
-                <div class="activity-card-body">
-                    <div class="activity-row">
-                        <span>Last Contacted:</span>
-                        <span>: {{ stats.last_contact }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Next Contact:</span>
-                        <span>: {{ stats.next_contact }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Notes:</span>
-                        <span>: {{ stats.notes }}</span>
-                    </div>
-                </div>
-            </div>
+      </div>
+    </div>
+  </div>
         </div>
     </div>
-
-    <!-- One card on the bottom -->
-     <div class="col-md-6">
-            <div class="activity-card">
-                <div class="activity-card-header">
-                    Bussiness Info:
-                </div>
-                <div class="activity-card-body">
-                    <div class="activity-row">
-                        <span>Customer type:</span>
-                        <span>: {{ stats.cus_type }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Industry:</span>
-                        <span>: {{ stats.industry }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Revenue Value:</span>
-                        <span>: {{ stats.rev_value }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Date Added:</span>
-                        <span>: {{ stats.date_added }}</span>
-                    </div>
-                    <div class="activity-row">
-                        <span>Added by:</span>
-                        <span>: {{ stats.added_by }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
 </div>   
 
 
