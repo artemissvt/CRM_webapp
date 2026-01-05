@@ -1,92 +1,72 @@
-{% extends 'base_employee.html' %}
+{% extends 'base_admin.html' %}
 {% block title %}View Customer{% endblock %}
 
 {% block content %}
-<div class="container-xl mt-4">
 
-  <!-- Search bar -->
-  <form method="get" class="admin-search mb-3">
-    <div class="input-group">
-      <span class="input-group-text admin-search-icon">🔍</span>
-      <input
-        type="text"
-        class="form-control admin-search-input"
-        name="q"
-        placeholder="Search for customer"
-        value="{{ q or '' }}"
-      >
-      <button class="btn btn-outline-secondary" type="submit">Search</button>
+<!-- Centered Dashboard title -->
+<div class="d-flex justify-content-center mb-4">
+    <div class="activity-header-box">
+        <h1 class="admin-dashboard-title">View Customer</h1>
     </div>
-  </form>
-
-  <!-- Search results buttons -->
-  {% if customers and customers|length > 0 %}
-    <div class="activity-card mb-3">
-      <div class="activity-card-header">Search results</div>
-      <div class="activity-card-body">
-        <div class="d-flex flex-wrap gap-2">
-          {% for c in customers %}
-            <a class="btn btn-sm btn-outline-primary"
-               href="{{ url_for('employee_view_cus') }}?q={{ q|urlencode }}&customer_id={{ c.id }}">
-              {{ c.customer_name }}
-            </a>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-  {% endif %}
-
-  {% if not customer %}
-    <div class="text-muted mt-4">
-      Search for a customer to view their details.
-    </div>
-  {% else %}
-
-  <div class="row g-4">
-
-    <!-- Main Info -->
-    <div class="col-lg-6">
-      <div class="activity-card">
-        <div class="activity-card-header">Main Info</div>
-        <div class="activity-card-body">
-          <div class="activity-row"><span>Customer Name</span><span>: {{ customer.customer_name or "" }}</span></div>
-          <div class="activity-row"><span>Contact person</span><span>: {{ customer.contact_person or "" }}</span></div>
-          <div class="activity-row"><span>Email</span><span>: {{ customer.email or "" }}</span></div>
-          <div class="activity-row"><span>Contact Phone</span><span>: {{ customer.contact_phone or "" }}</span></div>
-          <div class="activity-row"><span>Address</span><span>: {{ customer.address or "" }}</span></div>
-          <div class="activity-row"><span>Website</span><span>: {{ customer.website or "" }}</span></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Activity history -->
-    <div class="col-lg-6">
-      <div class="activity-card">
-        <div class="activity-card-header">Activity history</div>
-        <div class="activity-card-body">
-          <div class="activity-row"><span>Last contacted</span><span>: {{ activity.last_contact if activity else "" }}</span></div>
-          <div class="activity-row"><span>Next contact</span><span>: {{ activity.next_contact if activity else "" }}</span></div>
-          <div class="activity-row align-items-start"><span>Notes</span><span>: {{ activity.notes if activity else "" }}</span></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Business Info -->
-    <div class="col-lg-6">
-      <div class="activity-card">
-        <div class="activity-card-header">Business Info</div>
-        <div class="activity-card-body">
-          <div class="activity-row"><span>Customer type</span><span>: {{ customer.customer_type or "" }}</span></div>
-          <div class="activity-row"><span>Industry</span><span>: {{ customer.industry or "" }}</span></div>
-          <div class="activity-row"><span>Revenue Value</span><span>: {{ customer.revenue_value_euro or "" }}</span></div>
-          <div class="activity-row"><span>Date added</span><span>: {{ customer.customer_date or "" }}</span></div>
-          <div class="activity-row"><span>Added by</span><span>: {{ customer.added_by or "" }}</span></div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  {% endif %}
 </div>
+
+<div class="row g-4">
+    <div class="col-12">
+
+        
+        <!-- Search bar -->
+        <form method="get" class="admin-search mb-3">
+            <div class="input-group">
+                <span class="input-group-text admin-search-icon">🔍</span>
+                <input
+                    type="text"
+                    class="form-control admin-search-input"
+                    name="q"
+                    placeholder="Search for user"
+                    value="{{ q or '' }}">
+            </div>
+        </form>
+
+        <!-- User list card -->
+        <div class="admin-list-card">
+            <div class="admin-list-card-header">
+                Main Info:
+            </div>
+            
+            <div class="admin-list-table-wrap">
+                <table class="table admin-list-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Customer name</th>
+                            <th>Contact Person</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Address</th>
+                            <th>Website</th>
+                            <th>View</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for c in customers %}
+                        <tr>
+                            <td>{{ c.customer_name }}</td>
+                            <td>{{ c.contact_person }}</td>
+                            <td>{{ c.email }}</td>
+                            <td>{{ c.phone }}</td>
+                            <td>{{ c.address }}</td>
+                            <td>{{ c.website }}</td>
+                            <td>
+                                <a class="btn btn-sm btn-primary"href="{{ url_for('employee_customer_detail', customer_id=c.id) }}">Details</a>
+                            </td>
+
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
 {% endblock %}

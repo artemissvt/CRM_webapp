@@ -1,0 +1,83 @@
+{% extends "base_admin.html" %}
+{% block title %}Customer Details{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-center mb-4">
+  <div class="activity-header-box">
+    <h1 class="admin-dashboard-title">Customer Details</h1>
+  </div>
+</div>
+
+<div class="container-xl">
+  <div class="row g-4">
+
+    <!-- Main Info -->
+    <div class="col-lg-7">
+      <div class="activity-card">
+        <div class="activity-card-header">Main Info</div>
+        <div class="activity-card-body">
+          <div class="activity-row"><span>Customer name</span><span>: {{ customer.customer_name }}</span></div>
+          <div class="activity-row"><span>Contact person</span><span>: {{ customer.contact_person }}</span></div>
+          <div class="activity-row"><span>Email</span><span>: {{ customer.email }}</span></div>
+          <div class="activity-row"><span>Phone</span><span>: {{ customer.phone }}</span></div>
+          <div class="activity-row"><span>Address</span><span>: {{ customer.address }}</span></div>
+          <div class="activity-row"><span>Website</span><span>: {{ customer.website }}</span></div>
+        </div>
+      </div>
+    </div>
+    <!-- Activity history -->
+    <div class="col-lg-5">
+    <div class="activity-card">
+        <div class="activity-card-header">Activity history</div>
+        <div class="activity-card-body">
+        <div class="activity-row">
+            <span>Last contacted</span>
+            <span>: {{ contact.last_contact or '—' }}</span>
+        </div>
+        <div class="activity-row">
+            <span>Next contact</span>
+            <span>: {{ contact.next_contact or '—' }}</span>
+        </div>
+        <div class="activity-row">
+            <span>Notes</span>
+            <span>: {{ contact.notes or '—' }}</span>
+        </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Business Info -->
+    <div class="col-lg-7">
+      <div class="activity-card">
+        <div class="activity-card-header">Business Info</div>
+        <div class="activity-card-body">
+          <div class="activity-row"><span>Customer type</span><span>: {{ customer.customer_type }}</span></div>
+          <div class="activity-row"><span>Industry</span><span>: {{ customer.industry }}</span></div>
+          <div class="activity-row"><span>Revenue value in euro</span><span>: {{ customer.rev_value_euro }}</span></div>
+          <div class="activity-row"><span>Date added</span><span>: {{ customer.date_added }}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-3">
+  <a class="btn btn-primary"
+     href="{{ url_for('employee_customer_edit', customer_id=customer.id) }}">
+     Update customer
+  </a>
+
+  <form method="post"
+        action="{{ url_for('employee_customer_cancel', customer_id=customer.id) }}"
+        onsubmit="return confirm('Cancel this customer?');">
+    <button type="submit" class="btn btn-outline-danger">
+      Cancel customer
+    </button>
+  </form>
+</div>
+
+    
+
+  </div>
+</div>
+
+{% endblock %}

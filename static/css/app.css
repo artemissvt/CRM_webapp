@@ -258,6 +258,14 @@ body.bg-app {
     overflow: hidden;
 }
 
+.empl-list-card {
+    background: #e1c8ff;
+    border: 1.5px solid #3b3148;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+
 .admin-list-card-header {
     font-weight: 700;
     font-size: 1.2rem;

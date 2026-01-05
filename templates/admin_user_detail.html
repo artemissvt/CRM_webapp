@@ -1,0 +1,82 @@
+{% extends "base_admin.html" %}
+{% block title %}Update User{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-center mb-4">
+  <div class="activity-header-box">
+    <h1 class="admin-dashboard-title">Update User</h1>
+  </div>
+</div>
+
+<div class="container-xl">
+  <form method="post" class="row g-4">
+
+    <!-- Main Info -->
+    <div class="col-12 col-lg-7">
+      <div class="activity-card">
+        <div class="activity-card-header">Main Info</div>
+        <div class="activity-card-body">
+
+          <div class="mb-3">
+            <label class="form-label">User Full name</label>
+            <input type="text" class="form-control" name="name"
+                   value="{{ user.name or '' }}" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input type="text" class="form-control" name="password"
+                   value="{{ user.password or '' }}">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" name="username"
+                   value="{{ user.username or '' }}">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Role</label>
+            <input type="text" class="form-control" name="role"
+                   value="{{ user.role or '' }}">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Status</label>
+            <input type="text" class="form-control" name="status"
+                   value="{{ user.status or '' }}">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="col-12">
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary">
+      Save
+    </button>
+
+    <a class="btn btn-outline-secondary"
+       href="{{ url_for('admin_dashboard') }}">
+      Back
+    </a>
+
+    <!-- Delete (soft delete via status=cancel) -->
+    <form method="post"
+      action="{{ url_for('admin_user_cancel', user_id=user.id) }}"
+      onsubmit="return confirm('Cancel this user?');">
+  <button type="submit" class="btn btn-outline-danger">
+    Delete user
+  </button>
+</form>
+
+  </div>
+</div>
+
+
+  </form>
+</div>
+
+{% endblock %}

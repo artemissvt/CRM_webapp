@@ -171,14 +171,109 @@ def employee_dashboard():
     return render_template('employee_dashboard.html', stats=stats)
 
 
-@app.route('/employee/customers', methods=['GET'])
+@app.route("/employee/viewcustomer", methods=["GET"])
 @roles_permitted(['employee'])
 def employee_view_cus():
-    q = (request.args.get("q") or "").strip()
-    customer_id = (request.args.get("customer_id") or "").strip()
-    conn = get_db_connection()
-    
+    uid = session.get("uid")
+    if uid is None:
+        abort(401)
 
+    q = (request.args.get("q") or "").strip()
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    sql = """
+        SELECT id, customer_name, contact_person, email, phone, address, website
+        FROM customers
+        WHERE created_by_user_id = ?
+    """
+    params = [uid]
+
+    if q:
+        sql += """
+            AND (
+                customer_name  LIKE ? OR
+                contact_person LIKE ? OR
+                email          LIKE ? OR
+                phone          LIKE ? OR
+                address        LIKE ? OR
+                website        LIKE ?
+            )
+        """
+        like = f"%{q}%"
+        params.extend([like]*6)
+
+    sql += " ORDER BY customer_name ASC"
+
+    cur.execute(sql, params)
+    customers = cur.fetchall()
+    conn.close()
+
+    return render_template("employee_view_cus.html", customers=customers, q=q)
+
+@app.route("/employee/customer/<int:customer_id>")
+@roles_permitted(['employee'])
+def employee_customer_detail(customer_id: int):
+    uid = session.get("uid")
+    if uid is None:
+        abort(401)
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # 1) Main + Business info
+    cur.execute("""
+        SELECT
+            id,
+            customer_name,
+            contact_person,
+            email,
+            phone,
+            address,
+            website,
+
+            type AS customer_type,
+            industry,
+            rev_value_euro,
+            date_added
+        FROM customers
+        WHERE id = ?
+          AND created_by_user_id = ?
+    """, (customer_id, uid))
+    customer_row = cur.fetchone()
+
+    if customer_row is None:
+        conn.close()
+        abort(404)
+
+    # contact history
+    cur.execute("""
+        SELECT customer_id, last_contact, next_contact, notes
+        FROM customer_contact
+        WHERE customer_id = ?
+          AND created_by_user_id = ?
+        ORDER BY last_contact DESC
+        LIMIT 1
+    """, (customer_id, uid))
+
+    contact_row = cur.fetchone()
+    conn.close()
+
+    customer = dict(customer_row)
+
+    # Αν δεν υπάρχει contact record, δώσε κενά defaults για να μη σπάει το template
+    contact = dict(contact_row) if contact_row else {
+        "last_contact": None,
+        "next_contact": None,
+        "notes": None
+    }
+
+    return render_template(
+        "employee_customer_detail.html",
+        customer=customer,
+        contact=contact
+    )
 @app.route('/employee/addcustomer', methods=[ 'GET', 'POST' ])
 @roles_permitted(['employee'])
 def employee_add_cus():
@@ -288,7 +383,8 @@ def employee_add_cus_cont():
     if request.method == "POST":
         # --- Read fields exactly as your HTML sends them ---
         customer_name  = (request.form.get("customer_name") or "").strip()
-        last_contact = (request.form.get("customer_name") or "").strip()
+        last_contact = (request.form.get("last_contact") or "").strip()
+        next_contact = (request.form.get("next_contact") or "").strip()
         contact_person = (request.form.get("contact_person") or "").strip() or None
         email          = (request.form.get("email") or "").strip() or None
         phone          = (request.form.get("phone") or "").strip() or None
@@ -336,7 +432,7 @@ def employee_add_cus_cont():
                         (next_contact, topics, notes, created_by_user_id, customer_id, last_contact)
                     VALUES (?, ?, ?, ?, ?, ?)
                 """, (
-                    None,             # next_contact (you don't collect it in this form)
+                    next_contact,             # next_contact (you don't collect it in this form)
                     topics,           # topics (WARNING: your DB has UNIQUE here)
                     notes,            # notes
                     created_by_user_id,
@@ -359,6 +455,148 @@ def employee_add_cus_cont():
     # GET
     return render_template("employee_add_cus_cont.html")
 
+@app.route("/employee/customer/<int:customer_id>/edit", methods=["GET", "POST"])
+@roles_permitted(['employee'])
+def employee_customer_edit(customer_id: int):
+    uid = session.get("uid")
+    if uid is None:
+        abort(401)
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # Load customer (scoped to logged-in user)
+    cur.execute("""
+        SELECT
+            id,
+            customer_name,
+            contact_person,
+            email,
+            phone,
+            address,
+            website,
+            type,
+            industry,
+            rev_value_euro,
+            type
+        FROM customers
+        WHERE id = ?
+          AND created_by_user_id = ?
+    """, (customer_id, uid))
+    customer_row = cur.fetchone()
+
+    if customer_row is None:
+        conn.close()
+        abort(404)
+
+    customer = dict(customer_row)
+
+    if request.method == "POST":
+        form = request.form
+
+        customer_name  = (form.get("customer_name") or "").strip()
+        contact_person = (form.get("contact_person") or "").strip()
+        email          = (form.get("email") or "").strip()
+        phone          = (form.get("phone") or "").strip()
+        address        = (form.get("address") or "").strip()
+        website        = (form.get("website") or "").strip()
+
+        cust_type      = (form.get("type") or "").strip()
+        industry       = (form.get("industry") or "").strip()
+
+        rev_raw = (form.get("rev_value_euro") or "").strip()
+        rev_value_euro = None
+        if rev_raw != "":
+            try:
+                rev_value_euro = float(rev_raw)
+            except ValueError:
+                conn.close()
+                flash("Revenue value must be a number.")
+                # Re-render with the values the user attempted to submit
+                customer.update({
+                    "customer_name": customer_name,
+                    "contact_person": contact_person,
+                    "email": email,
+                    "phone": phone,
+                    "address": address,
+                    "website": website,
+                    "type": cust_type,
+                    "industry": industry,
+                    "rev_value_euro": rev_raw,  # keep raw to show in input
+                })
+                return render_template("employee_customer_edit.html", customer=customer)
+
+        # Optional: allow editing type from edit page.
+        # If you do NOT want type editable here, keep the DB value.
+        type = (form.get("type") or customer.get("type") or "").strip()
+
+        # Write ALL fields, even unchanged (your chosen approach)
+        cur.execute("""
+            UPDATE customers
+            SET
+                customer_name = ?,
+                contact_person = ?,
+                email = ?,
+                phone = ?,
+                address = ?,
+                website = ?,
+                type = ?,
+                industry = ?,
+                rev_value_euro = ?,
+                type = ?
+            WHERE id = ?
+              AND created_by_user_id = ?
+        """, (
+            customer_name,
+            contact_person,
+            email,
+            phone,
+            address,
+            website,
+            cust_type,
+            industry,
+            rev_value_euro,
+            type,
+            customer_id,
+            uid
+        ))
+
+        conn.commit()
+        conn.close()
+
+        flash("Customer updated.")
+        return redirect(url_for("employee_customer_detail", customer_id=customer_id))
+
+    conn.close()
+    return render_template("employee_customer_edit.html", customer=customer)
+
+
+@app.route("/employee/customer/<int:customer_id>/cancel", methods=["POST"])
+@roles_permitted(['employee'])
+def employee_customer_cancel(customer_id: int):
+    uid = session.get("uid")
+    if uid is None:
+        abort(401)
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # IMPORTANT: use the exact value stored in your DB enum.
+    # You said type has: lead, active, inactive and cancel
+    cancel_value = "cancelled"
+
+    cur.execute("""
+        UPDATE customers
+        SET type = ?
+        WHERE id = ?
+          AND created_by_user_id = ?
+    """, (cancel_value, customer_id, uid))
+
+    conn.commit()
+    conn.close()
+
+    flash("Customer cancelled.")
+    return redirect(url_for("employee_customer_detail", customer_id=customer_id))
 #manager
 @app.route('/manager')
 @roles_permitted(['manager'])
@@ -566,7 +804,9 @@ def admin_dashboard():
     try:
         rows = conn.execute("""
             SELECT
+                id,
                 name,
+                password,
                 role,
                 username,
                 status
@@ -577,21 +817,74 @@ def admin_dashboard():
     finally:
         conn.close()
 
-    users = [
-        {
-            "name": r["name"],
-            "role": r["role"],
-            "username": r["username"],
-            "status": r["status"],
-        }
-        for r in rows
-    ]
+    users = [dict(r) for r in rows]   # simplest and keeps id
+    return render_template("admin_dashboard.html", users=users, q=q)
 
-    return render_template(
-        "admin_dashboard.html",
-        users=users,
-        q=q
-    )
+@app.route("/admin/users/<int:user_id>/edit", methods=["GET", "POST"])
+@roles_permitted(['admin'])
+def admin_user_detail(user_id: int):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # Load user
+    cur.execute("""
+        SELECT id, name, username, role, status, password
+        FROM users
+        WHERE id = ?
+    """, (user_id,))
+    row = cur.fetchone()
+
+    if row is None:
+        conn.close()
+        abort(404)
+
+    user = dict(row)
+
+    if request.method == "POST":
+        form = request.form
+
+        name = (form.get("name") or "").strip()
+        username = (form.get("username") or "").strip()  # this is your "email" field
+        role = (form.get("role") or "").strip()
+        status = (form.get("status") or "").strip()
+        password = (form.get("password") or "").strip()
+
+        # Write ALL fields (your chosen approach)
+        cur.execute("""
+            UPDATE users
+            SET name = ?, username = ?, role = ?, status = ?, password = ?
+            WHERE id = ?
+        """, (name, username, role, status, password, user_id))
+
+        conn.commit()
+        conn.close()
+
+        flash("User updated.")
+        return redirect(url_for("admin_dashboard"))
+
+    conn.close()
+    return render_template("admin_user_detail.html", user=user)
+
+@app.route("/admin/users/<int:user_id>/cancel", methods=["POST"])
+@roles_permitted(['admin'])
+def admin_user_cancel(user_id: int):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # Use the exact enum/string stored in your DB
+    cancel_value = "cancel"
+
+    cur.execute("""
+        UPDATE users
+        SET status = ?
+        WHERE id = ?
+    """, (cancel_value, user_id))
+
+    conn.commit()
+    conn.close()
+
+    flash("User cancelled.")
+    return redirect(url_for("admin_dashboard"))
 
 
 @app.route('/admin/adduser', methods=['GET', 'POST'])
@@ -627,7 +920,7 @@ def admin_add_users():
             hashed_password = hash_password(username, password)
 
             cursor.execute("""
-                INSERT INTO users (name, username, password, role, status)
+                INSERT INTO users (name, username, password, role, type)
                 VALUES (?, ?, ?, ?, ?)
             """, (fullname, username, hashed_password, role, "Active"))
 
