@@ -3,6 +3,7 @@ import sqlite3
 import hashlib 
 from functools import wraps
 from flask import session, abort, url_for
+from datetime import datetime
 
 app = Flask(__name__)
 app.config['SESSION_TYPE'] = 'filesystem'
@@ -135,7 +136,7 @@ def employee_dashboard():
             SELECT COUNT(DISTINCT customer_id) AS cnt
             FROM customer_contact
             WHERE created_by_user_id = ?
-              AND date(last_contact) = date('now');
+              AND date(created_at) = date('now');
         """, (user_id,)).fetchone()["cnt"]
 
         # Last week = previous calendar week (Mon-Sun), not "last 7 days"
@@ -143,8 +144,8 @@ def employee_dashboard():
             SELECT COUNT(DISTINCT customer_id) AS cnt
             FROM customer_contact
             WHERE created_by_user_id = ?
-              AND date(last_contact) >= date('now','weekday 1','-14 days')
-              AND date(last_contact) <  date('now','weekday 1','-7 days');
+              AND date(created_at) >= date('now','weekday 1','-14 days')
+              AND date(created_at) <  date('now','weekday 1','-7 days');
         """, (user_id,)).fetchone()["cnt"]
 
         # Last month = previous calendar month
@@ -152,8 +153,8 @@ def employee_dashboard():
             SELECT COUNT(DISTINCT customer_id) AS cnt
             FROM customer_contact
             WHERE created_by_user_id = ?
-              AND date(last_contact) >= date('now','start of month','-1 month')
-              AND date(last_contact) <  date('now','start of month');
+              AND date(created_at) >= date('now','start of month','-1 month')
+              AND date(created_at) <  date('now','start of month');
         """, (user_id,)).fetchone()["cnt"]
 
     finally:
@@ -212,6 +213,7 @@ def employee_view_cus():
 
     return render_template("employee_view_cus.html", customers=customers, q=q)
 
+
 @app.route("/employee/customer/<int:customer_id>")
 @roles_permitted(['employee'])
 def employee_customer_detail(customer_id: int):
@@ -222,7 +224,7 @@ def employee_customer_detail(customer_id: int):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # 1) Main + Business info
+    #main, bussiness info
     cur.execute("""
         SELECT
             id,
@@ -232,11 +234,11 @@ def employee_customer_detail(customer_id: int):
             phone,
             address,
             website,
-
             type AS customer_type,
             industry,
             rev_value_euro,
-            date_added
+            date_added,
+            type
         FROM customers
         WHERE id = ?
           AND created_by_user_id = ?
@@ -247,33 +249,54 @@ def employee_customer_detail(customer_id: int):
         conn.close()
         abort(404)
 
-    # contact history
+    customer = dict(customer_row)
+
+    #activity history
     cur.execute("""
-        SELECT customer_id, last_contact, next_contact, notes
+        SELECT
+            created_at,
+            notes,
+            topics,
+            next_contact
         FROM customer_contact
         WHERE customer_id = ?
           AND created_by_user_id = ?
-        ORDER BY last_contact DESC
+        ORDER BY created_at DESC
         LIMIT 1
     """, (customer_id, uid))
-
-    contact_row = cur.fetchone()
-    conn.close()
-
-    customer = dict(customer_row)
-
-    # Αν δεν υπάρχει contact record, δώσε κενά defaults για να μη σπάει το template
-    contact = dict(contact_row) if contact_row else {
-        "last_contact": None,
-        "next_contact": None,
-        "notes": None
+    latest = cur.fetchone()
+    contact = dict(latest) if latest else {
+        "created_at": None,
+        "notes": None,
+        "topics": None,
+        "next_contact": None
     }
+
+    #full contact history 
+    cur.execute("""
+        SELECT
+            created_at,
+            topics,
+            notes,
+            next_contact
+        FROM customer_contact
+        WHERE customer_id = ?
+          AND created_by_user_id = ?
+        ORDER BY created_at DESC
+    """, (customer_id, uid))
+    history_rows = cur.fetchall()
+    contact_history = [dict(r) for r in history_rows]
+
+    conn.close()
 
     return render_template(
         "employee_customer_detail.html",
         customer=customer,
-        contact=contact
+        contact=contact,
+        contact_history=contact_history
     )
+
+
 @app.route('/employee/addcustomer', methods=[ 'GET', 'POST' ])
 @roles_permitted(['employee'])
 def employee_add_cus():
@@ -377,83 +400,60 @@ def employee_add_cus():
 
     return render_template("employee_add_cus.html")
 
-@app.route("/employee/addcustomercontact", methods=["GET", "POST"])
-@roles_permitted(["employee"])
-def employee_add_cus_cont():
-    if request.method == "POST":
-        # --- Read fields exactly as your HTML sends them ---
-        customer_name  = (request.form.get("customer_name") or "").strip()
-        last_contact = (request.form.get("last_contact") or "").strip()
-        next_contact = (request.form.get("next_contact") or "").strip()
-        contact_person = (request.form.get("contact_person") or "").strip() or None
-        email          = (request.form.get("email") or "").strip() or None
-        phone          = (request.form.get("phone") or "").strip() or None
-        topics         = (request.form.get("topics") or "").strip()
-        notes          = (request.form.get("notes") or "").strip() or None
-        
-        # --- Validate required fields ---
-        if not customer_name:
-            flash("ERROR: Customer name is required.", "danger")
-            return render_template("employee_add_cus_cont.html")
+@app.route("/employee/customer/<int:customer_id>/contact/new", methods=["GET", "POST"])
+@roles_permitted(['employee'])
+def employee_add_cus_cont(customer_id: int):
+    uid = session.get("uid")
+    if uid is None:
+        abort(401)
 
-        if not topics:
-            flash("ERROR: Topics discussed is required.", "danger")
-            return render_template("employee_add_cus_cont.html")
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
 
-        # Must be logged in (your login sets session['uid'])
-        created_by_user_id = session.get("uid")
-        if not created_by_user_id:
-            flash("ERROR: Session expired. Please log in again.", "danger")
-            return redirect(url_for("login"))
+        cur.execute("""
+            SELECT id, customer_name
+            FROM customers
+            WHERE id = ?
+              AND created_by_user_id = ?
+        """, (customer_id, uid))
+        customer_row = cur.fetchone()
+        if customer_row is None:
+            abort(404)
 
-        conn = get_db_connection()
-        try:
-            # 1) Find customer_id by exact name match
-            rows = conn.execute("""
-                SELECT id
-                FROM customers
-                WHERE customer_name = ?
-            """, (customer_name,)).fetchall()
+        customer = dict(customer_row)
 
-            if not rows:
-                flash("ERROR: Customer not found. Please create the customer first (exact name match).", "danger")
-                return render_template("employee_add_cus_cont.html")
+        if request.method == "POST":
+            topics = (request.form.get("topics") or "").strip()
+            notes = (request.form.get("notes") or "").strip()
+            next_contact = (request.form.get("next_contact") or "").strip()
 
-            if len(rows) > 1:
-                flash("ERROR: Multiple customers have this name. Please use a unique customer name.", "danger")
-                return render_template("employee_add_cus_cont.html")
+            if not topics and not notes and not next_contact:
+                flash("Please fill at least one field (topics, notes, or next contact).", "error")
+                return render_template("employee_add_cus_cont.html", customer=customer)
 
-            customer_id = rows[0]["id"]
+            created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            # Insert into customer_contact (aligned with your table columns)
-            try:
-                conn.execute("""
-                    INSERT INTO customer_contact
-                        (next_contact, topics, notes, created_by_user_id, customer_id, last_contact)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                """, (
-                    next_contact,             # next_contact (you don't collect it in this form)
-                    topics,           # topics (WARNING: your DB has UNIQUE here)
-                    notes,            # notes
-                    created_by_user_id,
+            cur.execute("""
+                INSERT INTO customer_contact (
                     customer_id,
-                    last_contact
-                ))
-                conn.commit()
+                    created_by_user_id,
+                    created_at,
+                    topics,
+                    notes,
+                    next_contact
+                ) VALUES (?, ?, ?, ?, ?, ?)
+            """, (customer_id, uid, created_at, topics, notes, next_contact))
 
-            except sqlite3.IntegrityError as e:
-                conn.rollback()
-                flash(f"Database error: {e}", "danger")
-                return render_template("employee_add_cus_cont.html")
+            conn.commit()
+            flash("Contact saved.", "success")
+            return redirect(url_for("employee_customer_detail", customer_id=customer_id))
 
-        finally:
-            conn.close()
+        return render_template("employee_add_cus_cont.html", customer=customer)
 
-        flash("New customer contact saved successfully.", "success")
-        return redirect(url_for("employee_dashboard"))
+    finally:
+        conn.close()
 
-    # GET
-    return render_template("employee_add_cus_cont.html")
 
 @app.route("/employee/customer/<int:customer_id>/edit", methods=["GET", "POST"])
 @roles_permitted(['employee'])
@@ -581,8 +581,6 @@ def employee_customer_cancel(customer_id: int):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # IMPORTANT: use the exact value stored in your DB enum.
-    # You said type has: lead, active, inactive and cancel
     cancel_value = "cancelled"
 
     cur.execute("""
@@ -597,6 +595,8 @@ def employee_customer_cancel(customer_id: int):
 
     flash("Customer cancelled.")
     return redirect(url_for("employee_customer_detail", customer_id=customer_id))
+
+
 #manager
 @app.route('/manager')
 @roles_permitted(['manager'])
@@ -663,8 +663,8 @@ def manager_view_emplo():
     cur.execute("""
         SELECT COUNT(*)
         FROM customer_contact
-        WHERE last_contact >= date('now','start of month')
-          AND last_contact <  date('now','start of month','+1 month');
+        WHERE created_at >= date('now','start of month')
+          AND created_at <  date('now','start of month','+1 month');
     """)
     contacts_this_month = cur.fetchone()[0]
 
@@ -676,8 +676,8 @@ def manager_view_emplo():
         SELECT e.username, COUNT(*) AS activity_count
         FROM customer_contact cc
         JOIN employees e ON e.id = cc.created_by_user_id
-        WHERE cc.last_contact >= date('now','start of month')
-          AND cc.last_contact <  date('now','start of month','+1 month')
+        WHERE cc.created_at >= date('now','start of month')
+          AND cc.created_at <  date('now','start of month','+1 month')
         GROUP BY e.id
         ORDER BY activity_count DESC
         LIMIT 1;
@@ -690,8 +690,8 @@ def manager_view_emplo():
         SELECT e.username AS name, COUNT(*) AS count
         FROM customer_contact cc
         JOIN employees e ON e.id = cc.created_by_user_id
-        WHERE cc.last_contact >= date('now','start of month')
-          AND cc.last_contact <  date('now','start of month','+1 month')
+        WHERE cc.created_at >= date('now','start of month')
+          AND cc.created_at <  date('now','start of month','+1 month')
         GROUP BY e.id
         ORDER BY count DESC;
     """)
@@ -752,11 +752,11 @@ def manager_view_cus():
                 c.id AS customer_id,
                 c.customer_name AS name,
                 COUNT(cc.contact_id) AS contact_count,
-                MAX(cc.last_contact) AS last_contact,
+                MAX(cc.created_at) AS created_at,
   CASE
-    WHEN MAX(cc.last_contact) IS NULL THEN NULL
-    ELSE CAST((julianday('now') - julianday(MAX(cc.last_contact))) AS INTEGER)
-  END AS days_since_last_contact
+    WHEN MAX(cc.created_at) IS NULL THEN NULL
+    ELSE CAST((julianday('now') - julianday(MAX(cc.created_at))) AS INTEGER)
+  END AS days_since_created_at
 FROM customers c
 LEFT JOIN customer_contact cc
   ON cc.customer_id = c.id
@@ -764,8 +764,8 @@ WHERE c.customer_name LIKE ?
 GROUP BY c.id, c.customer_name
 ORDER BY
   contact_count ASC,
-  (last_contact IS NOT NULL) ASC,
-  last_contact ASC
+  (created_at IS NOT NULL) ASC,
+  created_at ASC
 LIMIT 5;
 
         """, 
@@ -778,13 +778,13 @@ LIMIT 5;
     # e.name, e.haventresp, e.lastcont
     employee_list = []
     for r in rows:
-        last_contact = r["last_contact"]  # may be None if never contacted
-        days = r["days_since_last_contact"]
+        created_at = r["created_at"]  # may be None if never contacted
+        days = r["days_since_created_at"]
 
         employee_list.append({
             "name": r["name"],
-            "haventresp": ("Never" if last_contact is None else f"{days} days"),
-            "lastcont": ("Never" if last_contact is None else last_contact),
+            "haventresp": ("Never" if created_at is None else f"{days} days"),
+            "lastcont": ("Never" if created_at is None else created_at),
         })
 
     stats = {
@@ -809,7 +809,7 @@ def admin_dashboard():
                 password,
                 role,
                 username,
-                status
+                type,
             FROM users
             WHERE name LIKE ? OR username LIKE ?
             ORDER BY name ASC;
@@ -871,8 +871,8 @@ def admin_user_cancel(user_id: int):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Use the exact enum/string stored in your DB
-    cancel_value = "cancel"
+    # Use EXACT DB enum value
+    cancel_value = "Cancelled"  # not "cancelled" unless your DB stores that
 
     cur.execute("""
         UPDATE users

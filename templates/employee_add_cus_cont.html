@@ -1,72 +1,56 @@
-{% extends 'base_employee.html' %}
-{% block title %}Create Customer{% endblock %}
+{% extends "base_admin.html" %}
+{% block title %}New Contact{% endblock %}
 
 {% block content %}
-<div class="container-xl mt-4">
 
-
-<!-- Centered Dashboard title -->
 <div class="d-flex justify-content-center mb-4">
-    <div class="activity-header-box">
-        <h1 class="admin-dashboard-title">Add new Contact with Customer</h1>
-    </div>
+  <div class="activity-header-box">
+    <h1 class="admin-dashboard-title">New Contact</h1>
+  </div>
 </div>
 
-<form method="post" action="{{ url_for('employee_add_cus_cont') }}">
+<div class="container-xl">
+  <div class="row g-4">
+    <div class="col-12 col-lg-7">
 
-  <div class="activity-card">
-    <div class="activity-card-header">
-      Contact Info:
+      <div class="activity-card">
+        <div class="activity-card-header">
+          Add contact for: {{ customer.customer_name }}
+        </div>
+
+        <div class="activity-card-body">
+          <form method="post">
+
+            <div class="mb-3">
+              <label class="form-label">Topic</label>
+              <input type="text" class="form-control" name="topic" placeholder="e.g. Pricing discussion">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Notes</label>
+              <textarea class="form-control" name="notes" rows="4"
+                        placeholder="Short summary of the contact..."></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Next contact date</label>
+              <input type="date" class="form-control" name="next_contact">
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-success">Save contact</button>
+              <a class="btn btn-outline-secondary"
+                 href="{{ url_for('employee_customer_detail', customer_id=customer.id) }}">
+                Back
+              </a>
+            </div>
+
+          </form>
+        </div>
+      </div>
+
     </div>
-  </div> 
+  </div>
+</div>
 
-    <div class="activity-card-body">
-
-      <div class="activity-row">
-        <label>Customer name:</label>
-        <input type="text" name="customer_name" required>
-      </div>
-
-      <div class="activity-row">
-        <label>Contact Person:</label>
-        <input type="text" name="contact_person">
-      </div>
-
-      <div class="activity-row">
-        <label>Email:</label>
-        <input type="email" name="email">
-      </div>
-
-      <div class="activity-row">
-        <label>Contact Phone:</label>
-        <input type="text" name="phone">
-      </div>
-
-      <div class="activity-row">
-        <label>Topics Discussed</label>
-        <input type="text" name="topics">
-      </div>
-
-      <div class="activity-row">
-        <label>Notes:</label>
-        <input type="text" name="notes">
-      </div>
-
-      <div class="activity-row">
-        <label>Last Contact:</label>
-        <input type="date" name="last_contact">
-      </div>
-
-            <div class="activity-row">
-        <label>Next Contact:</label>
-        <input type="date" name="next_contact">
-      </div>
-
-  <button type="submit" class="btn btn-primary mt-3">
-    New Contact
-  </button>
-  
-    </div>
-
-</form>
 {% endblock %}

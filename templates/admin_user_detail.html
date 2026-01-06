@@ -58,20 +58,18 @@
       Save
     </button>
 
-    <a class="btn btn-outline-secondary"
-       href="{{ url_for('admin_dashboard') }}">
+    <a class="btn btn-outline-secondary" href="{{ url_for('admin_dashboard') }}">
       Back
     </a>
 
-    <!-- Delete (soft delete via status=cancel) -->
-    <form method="post"
-      action="{{ url_for('admin_user_cancel', user_id=user.id) }}"
-      onsubmit="return confirm('Cancel this user?');">
-  <button type="submit" class="btn btn-outline-danger">
-    Delete user
-  </button>
-</form>
-
+    <!-- Delete user (soft delete) - NO nested form -->
+    <button type="submit"
+            class="btn btn-outline-danger"
+            formaction="{{ url_for('admin_user_cancel', user_id=user.id) }}"
+            formmethod="post"
+            onclick="return confirm('Cancel this user?');">
+      Delete user
+    </button>
   </div>
 </div>
 

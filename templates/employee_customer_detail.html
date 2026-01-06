@@ -26,8 +26,24 @@
         </div>
       </div>
     </div>
-    <!-- Activity history -->
+
+
+    <!-- Business Info -->
     <div class="col-lg-5">
+      <div class="activity-card">
+        <div class="activity-card-header">Business Info</div>
+        <div class="activity-card-body">
+          <div class="activity-row"><span>Customer type</span><span>: {{ customer.customer_type }}</span></div>
+          <div class="activity-row"><span>Industry</span><span>: {{ customer.industry }}</span></div>
+          <div class="activity-row"><span>Revenue value in euro</span><span>: {{ customer.rev_value_euro }}</span></div>
+          <div class="activity-row"><span>Date added</span><span>: {{ customer.date_added }}</span></div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Activity history -->
+    <div class="col-lg-7">
     <div class="activity-card">
         <div class="activity-card-header">Activity history</div>
         <div class="activity-card-body">
@@ -47,23 +63,54 @@
     </div>
     </div>
 
-    <!-- Business Info -->
-    <div class="col-lg-7">
-      <div class="activity-card">
-        <div class="activity-card-header">Business Info</div>
-        <div class="activity-card-body">
-          <div class="activity-row"><span>Customer type</span><span>: {{ customer.customer_type }}</span></div>
-          <div class="activity-row"><span>Industry</span><span>: {{ customer.industry }}</span></div>
-          <div class="activity-row"><span>Revenue value in euro</span><span>: {{ customer.rev_value_euro }}</span></div>
-          <div class="activity-row"><span>Date added</span><span>: {{ customer.date_added }}</span></div>
+    <!-- Contact History -->
+<div class="col-lg-7">
+  <div class="activity-card">
+    <div class="activity-card-header">Contact history</div>
+    <div class="activity-card-body">
+
+      {% if contact_history and contact_history|length > 0 %}
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <thead>
+              <tr>
+                <th>Date of contact</th>
+                <th>Topic</th>
+                <th>Notes</th>
+                <th>Next contact</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for h in contact_history %}
+                <tr>
+                  <td>{{ h.created_at or '—' }}</td>
+                  <td>{{ h.topics or '—' }}</td>
+                  <td style="white-space: normal; word-break: break-word;">
+                    {{ h.notes or '—' }}
+                  </td>
+                  <td>{{ h.next_contact or '—' }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
-      </div>
+      {% else %}
+        <div>No contact history yet.</div>
+      {% endif %}
+
     </div>
+  </div>
+</div>
 
     <div class="d-flex gap-2 mt-3">
   <a class="btn btn-primary"
      href="{{ url_for('employee_customer_edit', customer_id=customer.id) }}">
-     Update customer
+    Update customer
+  </a>
+
+  <a class="btn btn-success"
+     href="{{ url_for('employee_add_cus_cont', customer_id=customer.id) }}">
+    New contact
   </a>
 
   <form method="post"
@@ -74,8 +121,6 @@
     </button>
   </form>
 </div>
-
-    
 
   </div>
 </div>
