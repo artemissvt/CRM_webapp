@@ -1,4 +1,4 @@
-{% extends "base_admin.html" %}
+{% extends "base_employee.html" %}
 {% block title %}Customer Details{% endblock %}
 
 {% block content %}
@@ -17,12 +17,12 @@
       <div class="activity-card">
         <div class="activity-card-header">Main Info</div>
         <div class="activity-card-body">
-          <div class="activity-row"><span>Customer name</span><span>: {{ customer.customer_name }}</span></div>
-          <div class="activity-row"><span>Contact person</span><span>: {{ customer.contact_person }}</span></div>
-          <div class="activity-row"><span>Email</span><span>: {{ customer.email }}</span></div>
-          <div class="activity-row"><span>Phone</span><span>: {{ customer.phone }}</span></div>
-          <div class="activity-row"><span>Address</span><span>: {{ customer.address }}</span></div>
-          <div class="activity-row"><span>Website</span><span>: {{ customer.website }}</span></div>
+          <div class="activity-row"><span>Customer name</span><span> {{ customer.customer_name }}</span></div>
+          <div class="activity-row"><span>Contact person</span><span> {{ customer.contact_person }}</span></div>
+          <div class="activity-row"><span>Email</span><span> {{ customer.email }}</span></div>
+          <div class="activity-row"><span>Phone</span><span> {{ customer.phone }}</span></div>
+          <div class="activity-row"><span>Address</span><span> {{ customer.address }}</span></div>
+          <div class="activity-row"><span>Website</span><span> {{ customer.website }}</span></div>
         </div>
       </div>
     </div>
@@ -33,10 +33,10 @@
       <div class="activity-card">
         <div class="activity-card-header">Business Info</div>
         <div class="activity-card-body">
-          <div class="activity-row"><span>Customer type</span><span>: {{ customer.customer_type }}</span></div>
-          <div class="activity-row"><span>Industry</span><span>: {{ customer.industry }}</span></div>
-          <div class="activity-row"><span>Revenue value in euro</span><span>: {{ customer.rev_value_euro }}</span></div>
-          <div class="activity-row"><span>Date added</span><span>: {{ customer.date_added }}</span></div>
+          <div class="activity-row"><span>Customer type</span><span> {{ customer.customer_type }}</span></div>
+          <div class="activity-row"><span>Industry</span><span> {{ customer.industry }}</span></div>
+          <div class="activity-row"><span>Revenue value in euro</span><span> {{ customer.rev_value_euro }}</span></div>
+          <div class="activity-row"><span>Date added</span><span> {{ customer.date_added }}</span></div>
         </div>
       </div>
     </div>
@@ -49,15 +49,15 @@
         <div class="activity-card-body">
         <div class="activity-row">
             <span>Last contacted</span>
-            <span>: {{ contact.last_contact or '—' }}</span>
+            <span> {{ contact.last_contact or '—' }}</span>
         </div>
         <div class="activity-row">
             <span>Next contact</span>
-            <span>: {{ contact.next_contact or '—' }}</span>
+            <span> {{ contact.next_contact or '—' }}</span>
         </div>
         <div class="activity-row">
             <span>Notes</span>
-            <span>: {{ contact.notes or '—' }}</span>
+            <span> {{ contact.notes or '—' }}</span>
         </div>
         </div>
     </div>

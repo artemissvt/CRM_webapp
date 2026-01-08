@@ -123,7 +123,7 @@ body.bg-app {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-/* keep content starting under the bar if you want spacing */
+/* small padding for space */
 .crm-main {
     padding-top: 12px;
 }
@@ -263,6 +263,31 @@ body.bg-app {
     border: 1.5px solid #3b3148;
     border-radius: 6px;
     overflow: hidden;
+}
+
+.bars1 {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bar1-row {
+  display: flex;
+  justify-content: space-between; /* key line */
+  align-items: center;
+}
+
+.bar1-name {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bar1-value {
+  font-weight: 600;
+  min-width: 2.5rem;
+  text-align: right;
 }
 
 

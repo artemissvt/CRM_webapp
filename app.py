@@ -104,9 +104,6 @@ def employee_dashboard():
 
     conn = get_db_connection()
     try:
-        # -----------------------------
-        # Customers added (by this employee)
-        # -----------------------------
         added_total = conn.execute("""
             SELECT COUNT(*) AS cnt
             FROM customers
@@ -297,25 +294,24 @@ def employee_customer_detail(customer_id: int):
     )
 
 
-@app.route('/employee/addcustomer', methods=[ 'GET', 'POST' ])
+@app.route('/employee/addcustomer', methods=['GET', 'POST'])
 @roles_permitted(['employee'])
 def employee_add_cus():
-    db = get_db_conn()
-    cursor = db.cursor() 
-    if request.method == "POST":
-        # read + normalize form fields
-        customer_name  = (request.form.get("customer_name") or "").strip()
+    uid = session.get("uid")
+    if uid is None:
+        abort(401)
 
-        contact_person = (request.form.get("contact_person") or "").strip()
-        email          = (request.form.get("email") or "").strip()
-        phone          = (request.form.get("phone") or "").strip()
-        address        = (request.form.get("address") or "").strip()
-        website        = (request.form.get("website") or "").strip()
-        type_          = (request.form.get("type") or "").strip()
-        industry       = (request.form.get("industry") or "").strip()
+    if request.method == "POST":
+        customer_name  = (request.form.get("customer_name") or "").strip()
+        contact_person = (request.form.get("contact_person") or "").strip() or None
+        email          = (request.form.get("email") or "").strip() or None
+        phone          = (request.form.get("phone") or "").strip() or None
+        address        = (request.form.get("address") or "").strip() or None
+        website        = (request.form.get("website") or "").strip() or None
+        type_          = (request.form.get("type") or "").strip() or None
+        industry       = (request.form.get("industry") or "").strip() or None
         rev_raw        = (request.form.get("rev_value_euro") or "").strip()
 
-        # data validation
         if not customer_name:
             flash("Customer name is required.", "danger")
             return render_template("employee/addcustomer.html")
@@ -328,77 +324,36 @@ def employee_add_cus():
                 flash("Revenue value must be numeric (e.g., 10000 or 10000.50).", "danger")
                 return render_template("employee/addcustomer.html")
 
-        # Normalize empty strings to None in order for the db to be clean
-        contact_person = contact_person or None
-        email          = email or None
-        phone          = phone or None
-        address        = address or None
-        website        = website or None
-        type_          = type_ or None
-        industry       = industry or None
-
-        # store username/email in session and use it for created by user id
-        if created_by_user_id is None:
-            session_username = session.get("username") 
-
-            if session_username:
-                conn = get_db_connection()
-                try:
-                    row = conn.execute(
-                        "SELECT id FROM employees WHERE username = ?",
-                        (session_username,)
-                    ).fetchone()
-                finally:
-                    conn.close()
-
-                if row is None:
-                    flash("Logged-in employee not found in employees table.", "danger")
-                    return render_template("employee/addcustomer.html")
-
-                created_by_user_id = row["id"]
-
-        # data insert into customers table
         conn = get_db_connection()
         try:
             cur = conn.cursor()
-
-            cur.execute(
-                """
+            cur.execute("""
                 INSERT INTO customers
-                (customer_name, contact_person, email, phone,
-                 address, website, type, industry, rev_value_euro,
-                 created_by_user_id)
+                  (customer_name, contact_person, email, phone,
+                   address, website, type, industry, rev_value_euro,
+                   created_by_user_id)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    customer_name,
-                    contact_person,
-                    email,
-                    phone,
-                    address,
-                    website,
-                    type_,
-                    industry,
-                    rev_value_euro,
-                    created_by_user_id
-                )
-            )
-
+            """, (
+                customer_name,
+                contact_person,
+                email,
+                phone,
+                address,
+                website,
+                type_,
+                industry,
+                rev_value_euro,
+                uid
+            ))
             conn.commit()
             new_id = cur.lastrowid
-
-        except sqlite3.IntegrityError as e:
-            conn.rollback()
-            flash(f"Database constraint error: {e}", "danger")
-            return render_template("employee/addcustomer.html")
-
         finally:
             conn.close()
 
         flash(f"Customer '{customer_name}' was created successfully.", "success")
-        return redirect(url_for("employee_add_cus", customer_id=new_id))
+        return redirect(url_for("employee_customer_detail", customer_id=new_id))
 
-    return render_template("employee_add_cus.html")
+    return render_template("employee/addcustomer.html")
 
 @app.route("/employee/customer/<int:customer_id>/contact/new", methods=["GET", "POST"])
 @roles_permitted(['employee'])
@@ -809,7 +764,7 @@ def admin_dashboard():
                 password,
                 role,
                 username,
-                type,
+                status
             FROM users
             WHERE name LIKE ? OR username LIKE ?
             ORDER BY name ASC;
@@ -920,7 +875,7 @@ def admin_add_users():
             hashed_password = hash_password(username, password)
 
             cursor.execute("""
-                INSERT INTO users (name, username, password, role, type)
+                INSERT INTO users (name, username, password, role, status)
                 VALUES (?, ?, ?, ?, ?)
             """, (fullname, username, hashed_password, role, "Active"))
 

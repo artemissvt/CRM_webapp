@@ -1,4 +1,4 @@
-{% extends "base_admin.html" %}
+{% extends "base_employee.html" %}
 {% block title %}New Contact{% endblock %}
 
 {% block content %}
@@ -12,7 +12,6 @@
 <div class="container-xl">
   <div class="row g-4">
     <div class="col-12 col-lg-7">
-
       <div class="activity-card">
         <div class="activity-card-header">
           Add contact for: {{ customer.customer_name }}
@@ -22,18 +21,17 @@
           <form method="post">
 
             <div class="mb-3">
-              <label class="form-label">Topic</label>
-              <input type="text" class="form-control" name="topic" placeholder="e.g. Pricing discussion">
+              <label class="form-label">Topics</label>
+              <input type="text" class="form-control" name="topics">
             </div>
 
             <div class="mb-3">
               <label class="form-label">Notes</label>
-              <textarea class="form-control" name="notes" rows="4"
-                        placeholder="Short summary of the contact..."></textarea>
+              <textarea class="form-control" name="notes" rows="4"></textarea>
             </div>
 
             <div class="mb-3">
-              <label class="form-label">Next contact date</label>
+              <label class="form-label">Next contact</label>
               <input type="date" class="form-control" name="next_contact">
             </div>
 
@@ -48,7 +46,6 @@
           </form>
         </div>
       </div>
-
     </div>
   </div>
 </div>

@@ -10,6 +10,15 @@
   {% endif %}
 {% endwith %}
 
+{% if back_url %}
+  <div class="container mb-3">
+    <a href="{{ back_url }}" class="btn btn-outline-secondary">
+      ← Back
+    </a>
+  </div>
+{% endif %}
+
+
 <!doctype html>
 <html lang="en">
 <head>
