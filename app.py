@@ -314,7 +314,8 @@ def employee_add_cus():
 
         if not customer_name:
             flash("Customer name is required.", "danger")
-            return render_template("employee/addcustomer.html")
+            return render_template("employee_add_cus.html")
+
 
         rev_value_euro = None
         if rev_raw:
@@ -322,7 +323,8 @@ def employee_add_cus():
                 rev_value_euro = float(rev_raw.replace(",", "."))
             except ValueError:
                 flash("Revenue value must be numeric (e.g., 10000 or 10000.50).", "danger")
-                return render_template("employee/addcustomer.html")
+                return render_template("employee_add_cus.html")
+
 
         conn = get_db_connection()
         try:
@@ -353,7 +355,8 @@ def employee_add_cus():
         flash(f"Customer '{customer_name}' was created successfully.", "success")
         return redirect(url_for("employee_customer_detail", customer_id=new_id))
 
-    return render_template("employee/addcustomer.html")
+    return render_template("employee_add_cus.html")
+
 
 @app.route("/employee/customer/<int:customer_id>/contact/new", methods=["GET", "POST"])
 @roles_permitted(['employee'])
